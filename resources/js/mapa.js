@@ -8,9 +8,9 @@ window.onload = async () => {
         container: 'map',
         mapStyle: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
         initialViewState: {
-          longitude: -44.0248,
-          latitude: -19.8300,
-          zoom: 14.5,
+          longitude: -44.0508,
+          latitude: -19.8670,
+          zoom: 12.3,
           pitch: 0,
           bearing: 0
         },

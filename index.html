@@ -1,26 +1,216 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Malha Hexagonal Recortada no Contorno - deck.gl</title>
-  
-  <!-- CSS e Bibliotecas (MapLibre, deck.gl, Uber H3 e Turf.js) -->
-  <link href="https://unpkg.com/maplibre-gl@3.6.0/dist/maplibre-gl.css" rel="stylesheet" />
-  <script src="https://unpkg.com/maplibre-gl@3.6.0/dist/maplibre-gl.js"></script>
-  <script src="https://unpkg.com/deck.gl@8.9.33/dist.min.js"></script>
-  <script src="https://unpkg.com/h3-js@3.7.2/dist/h3-js.umd.js"></script>
-  
-  <!-- Biblioteca para Operações Geométricas e Recorte (Turf.js) -->
-  <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hackathon PMMG 2026</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome para os ícones -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="resources/css/index.css"> 
+     <!-- CSS e Bibliotecas (MapLibre, deck.gl, Uber H3 e Turf.js) -->
+    <link href="https://unpkg.com/maplibre-gl@3.6.0/dist/maplibre-gl.css" rel="stylesheet" />
+    <script src="https://unpkg.com/maplibre-gl@3.6.0/dist/maplibre-gl.js"></script>
+    <script src="https://unpkg.com/deck.gl@8.9.33/dist.min.js"></script>
+    <script src="https://unpkg.com/h3-js@3.7.2/dist/h3-js.umd.js"></script>
+    
+    <!-- Biblioteca para Operações Geométricas e Recorte (Turf.js) -->
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
 
-  
+    <link rel="stylesheet" href="resources/css/index.css"> 
 </head>
-<body>
-  <div id="map"></div>
-
+<body class="min-h-screen lg:h-screen w-full flex flex-col p-3 sm:p-4 md:p-6 lg:p-10 max-w-[1800px] mx-auto overflow-x-hidden lg:overflow-hidden">
   
+  <!-- Header / Topo -->
+  <header class="flex justify-between items-center mb-4 sm:mb-6 lg:mb-10 relative z-10 w-full px-1 sm:px-2">
+      <!-- Textos puramente estéticos à esquerda -->
+      <div class="hidden md:flex flex-col text-[0.5rem] sm:text-[0.6rem] text-slate-500 font-mono leading-tight tracking-widest">
+          <span>SYS.INIT_v2.0.4 [ONLINE]</span>
+          <span>DATA_STREAM: SECURE</span>
+      </div>
+      
+      <!-- Título Central -->
+      <div class="flex-1 flex justify-center items-center gap-2 sm:gap-4">
+          <h1 class="text-sm sm:text-xl md:text-3xl lg:text-4xl font-bold tracking-[0.1em] sm:tracking-[0.2em] text-slate-200 uppercase drop-shadow-md text-center">
+              Hackathon PMMG - 2026
+          </h1>
+          <!-- Logo Placeholder -->
+          <div class="">
+              <img src="resources/img/logo.png" alt="Logo" class="w-16 h-">
+          </div>
+      </div>
+      
+      <!-- Status do Servidor à direita -->
+      <div class="hidden md:flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs font-mono text-emerald-400 bg-emerald-900/20 px-3 sm:px-4 py-1.5 sm:py-2 rounded border border-emerald-900/50 backdrop-blur">
+          <span class="uppercase tracking-wider">Server Status</span>
+          <div class="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981] animate-pulse"></div>
+      </div>
+  </header>
+
+  <!-- Conteúdo Principal (Grid/Flexbox Responsivo) -->
+  <main class="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-12 flex-1 h-full w-full">
+      
+      <!-- COLUNA ESQUERDA: Mapa e Botão Upload -->
+      <section class="w-full lg:w-[60%] flex flex-col gap-4 sm:gap-6 h-full">
+          
+          <!-- Container do Mapa -->
+          <div class="map-wrapper w-full flex-1 min-h-[300px] sm:min-h-[400px] lg:min-h-0 flex flex-col">
+              <!-- Cantoneiras tecnológicas -->
+              <div class="b-tl bracket"></div>
+              <div class="b-tr bracket"></div>
+              <div class="b-bl bracket"></div>
+              <div class="b-br bracket"></div>
+              
+              <!-- Área Visual do Mapa -->
+              <div class="w-full h-full bg-[#f6f4eb] rounded shadow-inner overflow-hidden relative border border-slate-700/50">
+                  <div id="map" class="w-full h-full"></div>
+              </div>
+          </div>
+
+          <!-- Botão Fazer Upload -->
+          <button class="glass glow-upload rounded-xl px-4 py-3 sm:px-6 sm:py-4 lg:px-8 lg:py-5 flex items-center justify-center gap-3 sm:gap-4 w-full lg:w-max group mt-1 sm:mt-2 mx-auto lg:mx-0">
+              <span class="text-slate-200 font-medium text-sm sm:text-base lg:text-lg tracking-wide group-hover:text-white transition-colors">Fazer upload das ocorrencias</span>
+              <i class="fa-solid fa-arrow-up-from-bracket text-slate-300 text-base sm:text-lg group-hover:-translate-y-1 transition-transform duration-300"></i>
+          </button>
+          
+      </section>
+
+      <!-- COLUNA DIREITA: Botões de Interação -->
+      <section class="w-full lg:w-[30%] flex flex-col gap-2.5 sm:gap-3 lg:gap-10 pb-8 lg:pb-0">
+          
+          <!-- LINHA 1 -->
+          <div class="grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4">
+              <!-- Botão VTR -->
+              <button class="glass glow-cyan rounded-xl p-2.5 sm:p-3 lg:p-4 flex flex-col justify-center items-start cursor-pointer group relative overflow-hidden">
+                  <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+                  <div class="flex items-center justify-between w-full mb-1 sm:mb-2">
+                      <div class="relative">
+                          <i class="fa-solid fa-car text-slate-300 text-sm sm:text-lg lg:text-xl group-hover:text-cyan-200 transition-colors"></i>
+                          <div class="absolute -top-1 -left-1 w-1 sm:w-1.5 h-1 sm:h-1.5 bg-red-500 rounded-full shadow-[0_0_5px_#ef4444] animate-pulse"></div>
+                          <div class="absolute -top-1 -right-1 w-1 sm:w-1.5 h-1 sm:h-1.5 bg-blue-500 rounded-full shadow-[0_0_5px_#3b82f6] animate-pulse" style="animation-delay: 0.5s"></div>
+                      </div>
+                      <div class="flex items-center gap-1.5 sm:gap-2">
+                          <span class="w-1.5 h-1.5 lg:w-2 lg:h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#22d3ee] animate-pulse"></span>
+                          <span class="text-cyan-400 font-bold text-xs sm:text-base lg:text-lg tracking-wider group-hover:text-cyan-300">VTR-1</span>
+                      </div>
+                  </div>
+                  <span class="text-slate-300 text-[10px] sm:text-xs lg:text-sm font-medium group-hover:text-white transition-colors text-left leading-tight mt-1">Colocar em atendimento</span>
+              </button>
+              <!-- Botão Gerar Cartão -->
+              <button class="glass glow-orange rounded-xl p-2.5 sm:p-3 lg:p-4 flex items-center justify-start gap-2 sm:gap-3 lg:gap-4 cursor-pointer group relative overflow-hidden">
+                  <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+                  <i class="fa-solid fa-print text-orange-400 text-base sm:text-xl lg:text-2xl group-hover:scale-110 transition-transform duration-300 ml-0 sm:ml-1"></i>
+                  <span class="text-slate-100 font-medium text-[10px] sm:text-xs lg:text-sm text-left leading-tight group-hover:text-white">Gerar Cartão<br>Programa</span>
+              </button>
+          </div>
+
+          <!-- LINHA 2 -->
+          <div class="grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4">
+              <button class="glass glow-cyan rounded-xl p-2.5 sm:p-3 lg:p-4 flex flex-col justify-center items-start cursor-pointer group relative overflow-hidden">
+                  <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+                  <div class="flex items-center justify-between w-full mb-1 sm:mb-2">
+                      <div class="relative">
+                          <i class="fa-solid fa-car text-slate-300 text-sm sm:text-lg lg:text-xl group-hover:text-cyan-200 transition-colors"></i>
+                          <div class="absolute -top-1 -left-1 w-1 sm:w-1.5 h-1 sm:h-1.5 bg-red-500 rounded-full shadow-[0_0_5px_#ef4444] animate-pulse"></div>
+                          <div class="absolute -top-1 -right-1 w-1 sm:w-1.5 h-1 sm:h-1.5 bg-blue-500 rounded-full shadow-[0_0_5px_#3b82f6] animate-pulse" style="animation-delay: 0.5s"></div>
+                      </div>
+                      <div class="flex items-center gap-1.5 sm:gap-2">
+                          <span class="w-1.5 h-1.5 lg:w-2 lg:h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#22d3ee] animate-pulse"></span>
+                          <span class="text-cyan-400 font-bold text-xs sm:text-base lg:text-lg tracking-wider group-hover:text-cyan-300">VTR-2</span>
+                      </div>
+                  </div>
+                  <span class="text-slate-300 text-[10px] sm:text-xs lg:text-sm font-medium group-hover:text-white transition-colors text-left leading-tight mt-1">Colocar em atendimento</span>
+              </button>
+              <button class="glass glow-orange rounded-xl p-2.5 sm:p-3 lg:p-4 flex items-center justify-start gap-2 sm:gap-3 lg:gap-4 cursor-pointer group relative overflow-hidden">
+                  <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+                  <i class="fa-solid fa-print text-orange-400 text-base sm:text-xl lg:text-2xl group-hover:scale-110 transition-transform duration-300 ml-0 sm:ml-1"></i>
+                  <span class="text-slate-100 font-medium text-[10px] sm:text-xs lg:text-sm text-left leading-tight group-hover:text-white">Gerar Cartão<br>Programa</span>
+              </button>
+          </div>
+
+          <!-- LINHA 3 -->
+          <div class="grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4">
+              <button class="glass glow-cyan rounded-xl p-2.5 sm:p-3 lg:p-4 flex flex-col justify-center items-start cursor-pointer group relative overflow-hidden">
+                  <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+                  <div class="flex items-center justify-between w-full mb-1 sm:mb-2">
+                      <div class="relative">
+                          <i class="fa-solid fa-car text-slate-300 text-sm sm:text-lg lg:text-xl group-hover:text-cyan-200 transition-colors"></i>
+                          <div class="absolute -top-1 -left-1 w-1 sm:w-1.5 h-1 sm:h-1.5 bg-red-500 rounded-full shadow-[0_0_5px_#ef4444] animate-pulse"></div>
+                          <div class="absolute -top-1 -right-1 w-1 sm:w-1.5 h-1 sm:h-1.5 bg-blue-500 rounded-full shadow-[0_0_5px_#3b82f6] animate-pulse" style="animation-delay: 0.5s"></div>
+                      </div>
+                      <div class="flex items-center gap-1.5 sm:gap-2">
+                          <span class="w-1.5 h-1.5 lg:w-2 lg:h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#22d3ee] animate-pulse"></span>
+                          <span class="text-cyan-400 font-bold text-xs sm:text-base lg:text-lg tracking-wider group-hover:text-cyan-300">VTR-3</span>
+                      </div>
+                  </div>
+                  <span class="text-slate-300 text-[10px] sm:text-xs lg:text-sm font-medium group-hover:text-white transition-colors text-left leading-tight mt-1">Colocar em atendimento</span>
+              </button>
+              <button class="glass glow-orange rounded-xl p-2.5 sm:p-3 lg:p-4 flex items-center justify-start gap-2 sm:gap-3 lg:gap-4 cursor-pointer group relative overflow-hidden">
+                  <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+                  <i class="fa-solid fa-print text-orange-400 text-base sm:text-xl lg:text-2xl group-hover:scale-110 transition-transform duration-300 ml-0 sm:ml-1"></i>
+                  <span class="text-slate-100 font-medium text-[10px] sm:text-xs lg:text-sm text-left leading-tight group-hover:text-white">Gerar Cartão<br>Programa</span>
+              </button>
+          </div>
+
+          <!-- LINHA 4 -->
+          <div class="grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4">
+              <button class="glass glow-cyan rounded-xl p-2.5 sm:p-3 lg:p-4 flex flex-col justify-center items-start cursor-pointer group relative overflow-hidden">
+                  <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+                  <div class="flex items-center justify-between w-full mb-1 sm:mb-2">
+                      <div class="relative">
+                          <i class="fa-solid fa-car text-slate-300 text-sm sm:text-lg lg:text-xl group-hover:text-cyan-200 transition-colors"></i>
+                          <div class="absolute -top-1 -left-1 w-1 sm:w-1.5 h-1 sm:h-1.5 bg-red-500 rounded-full shadow-[0_0_5px_#ef4444] animate-pulse"></div>
+                          <div class="absolute -top-1 -right-1 w-1 sm:w-1.5 h-1 sm:h-1.5 bg-blue-500 rounded-full shadow-[0_0_5px_#3b82f6] animate-pulse" style="animation-delay: 0.5s"></div>
+                      </div>
+                      <div class="flex items-center gap-1.5 sm:gap-2">
+                          <span class="w-1.5 h-1.5 lg:w-2 lg:h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#22d3ee] animate-pulse"></span>
+                          <span class="text-cyan-400 font-bold text-xs sm:text-base lg:text-lg tracking-wider group-hover:text-cyan-300">VTR-4</span>
+                      </div>
+                  </div>
+                  <span class="text-slate-300 text-[10px] sm:text-xs lg:text-sm font-medium group-hover:text-white transition-colors text-left leading-tight mt-1">Colocar em atendimento</span>
+              </button>
+              <button class="glass glow-orange rounded-xl p-2.5 sm:p-3 lg:p-4 flex items-center justify-start gap-2 sm:gap-3 lg:gap-4 cursor-pointer group relative overflow-hidden">
+                  <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+                  <i class="fa-solid fa-print text-orange-400 text-base sm:text-xl lg:text-2xl group-hover:scale-110 transition-transform duration-300 ml-0 sm:ml-1"></i>
+                  <span class="text-slate-100 font-medium text-[10px] sm:text-xs lg:text-sm text-left leading-tight group-hover:text-white">Gerar Cartão<br>Programa</span>
+              </button>
+          </div>
+
+          <!-- LINHA 5 -->
+          <div class="grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4">
+              <button class="glass glow-cyan rounded-xl p-2.5 sm:p-3 lg:p-4 flex flex-col justify-center items-start cursor-pointer group relative overflow-hidden">
+                  <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+                  <div class="flex items-center justify-between w-full mb-1 sm:mb-2">
+                      <div class="relative">
+                          <i class="fa-solid fa-car text-slate-300 text-sm sm:text-lg lg:text-xl group-hover:text-cyan-200 transition-colors"></i>
+                          <div class="absolute -top-1 -left-1 w-1 sm:w-1.5 h-1 sm:h-1.5 bg-red-500 rounded-full shadow-[0_0_5px_#ef4444] animate-pulse"></div>
+                          <div class="absolute -top-1 -right-1 w-1 sm:w-1.5 h-1 sm:h-1.5 bg-blue-500 rounded-full shadow-[0_0_5px_#3b82f6] animate-pulse" style="animation-delay: 0.5s"></div>
+                      </div>
+                      <div class="flex items-center gap-1.5 sm:gap-2">
+                          <span class="w-1.5 h-1.5 lg:w-2 lg:h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#22d3ee] animate-pulse"></span>
+                          <span class="text-cyan-400 font-bold text-xs sm:text-base lg:text-lg tracking-wider group-hover:text-cyan-300">VTR-5</span>
+                      </div>
+                  </div>
+                  <span class="text-slate-300 text-[10px] sm:text-xs lg:text-sm font-medium group-hover:text-white transition-colors text-left leading-tight mt-1">Colocar em atendimento</span>
+              </button>
+              <button class="glass glow-orange rounded-xl p-2.5 sm:p-3 lg:p-4 flex items-center justify-start gap-2 sm:gap-3 lg:gap-4 cursor-pointer group relative overflow-hidden">
+                  <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+                  <i class="fa-solid fa-print text-orange-400 text-base sm:text-xl lg:text-2xl group-hover:scale-110 transition-transform duration-300 ml-0 sm:ml-1"></i>
+                  <span class="text-slate-100 font-medium text-[10px] sm:text-xs lg:text-sm text-left leading-tight group-hover:text-white">Gerar Cartão<br>Programa</span>
+              </button>
+          </div>
+
+      </section>
+  </main>
+
   <script src="resources/js/mapa.js"></script>
 </body>
 </html>

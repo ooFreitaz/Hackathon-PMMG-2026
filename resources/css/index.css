@@ -1,12 +1,89 @@
-body { 
-    margin: 0; 
-    padding: px; 
-    width: 100vw; 
-    height: 100vh; 
-    overflow: hidden;
+/* Configurações Globais e Tema Fundo */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #0b1121; /* Fundo escuro premium */
+    background-image: 
+        radial-gradient(circle at 50% 0%, rgba(30, 41, 59, 0.5) 0%, transparent 60%),
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 100% 100%, 40px 40px, 40px 40px;
+    color: #e2e8f0;
 }
 
-#map {
-    width: 70%; 
-    height: 100%; 
+/* Efeito de Vidro (Glassmorphism) para os painéis */
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
+
+/* Animação de brilho passando no hover */
+@keyframes shimmer {
+    100% { transform: translateX(100%); }
+}
+
+/* Brilho Neon Cyan (Botões Esquerda) */
+.glow-cyan {
+    box-shadow: 0 0 15px rgba(6, 182, 212, 0.12), inset 0 0 10px rgba(6, 182, 212, 0.08);
+    border: 1px solid rgba(6, 182, 212, 0.25);
+    transition: all 0.3s ease;
+}
+.glow-cyan:hover {
+    box-shadow: 0 0 25px rgba(6, 182, 212, 0.35), inset 0 0 15px rgba(6, 182, 212, 0.15);
+    border-color: rgba(6, 182, 212, 0.7);
+    transform: translateY(-2px);
+}
+
+/* Brilho Neon Laranja (Botões Direita) */
+.glow-orange {
+    box-shadow: 0 0 15px rgba(249, 115, 22, 0.12), inset 0 0 10px rgba(249, 115, 22, 0.08);
+    border: 1px solid rgba(249, 115, 22, 0.25);
+    transition: all 0.3s ease;
+}
+.glow-orange:hover {
+    box-shadow: 0 0 25px rgba(249, 115, 22, 0.35), inset 0 0 15px rgba(249, 115, 22, 0.15);
+    border-color: rgba(249, 115, 22, 0.7);
+    transform: translateY(-2px);
+}
+
+/* Brilho Neutro (Botão de Upload) */
+.glow-upload {
+    box-shadow: 0 0 15px rgba(148, 163, 184, 0.1), inset 0 0 10px rgba(148, 163, 184, 0.05);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    transition: all 0.3s ease;
+}
+.glow-upload:hover {
+    box-shadow: 0 0 20px rgba(148, 163, 184, 0.25), inset 0 0 10px rgba(148, 163, 184, 0.1);
+    border-color: rgba(148, 163, 184, 0.5);
+    transform: translateY(-2px) scale(1.01);
+}
+
+/* Detalhes Tecnológicos (Corner Brackets no Mapa) */
+.map-wrapper {
+    position: relative;
+    padding: 18px; /* Espaço para as marcações de canto */
+}
+.bracket {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-color: rgba(255, 255, 255, 0.7);
+    border-style: solid;
+    pointer-events: none;
+    transition: all 0.3s;
+}
+.map-wrapper:hover .bracket {
+    border-color: rgba(6, 182, 212, 0.8);
+    width: 25px;
+    height: 25px;
+}
+.b-tl { top: 0; left: 0; border-width: 2px 0 0 2px; }
+.b-tr { top: 0; right: 0; border-width: 2px 2px 0 0; }
+.b-bl { bottom: 0; left: 0; border-width: 0 0 2px 2px; }
+.b-br { bottom: 0; right: 0; border-width: 0 2px 2px 0; }
+
+/* Scrollbar customizada para telas menores */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #0b1121; }
+::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #334155; }
