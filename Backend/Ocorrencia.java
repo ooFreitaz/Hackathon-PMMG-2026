@@ -1,38 +1,61 @@
-package Backend;
-
+import java.time.LocalDate;
 import java.time.LocalTime;
 
 public class Ocorrencia {
-    private String id;
     private double latitude;
     private double longitude;
-    private String gravidade; 
-    private LocalTime horario;
+    private LocalDate data;
+    private LocalTime hora;
+    private char natureza;
+    private int pesoDoCrime;
 
-    public Ocorrencia(String id, double latitude, double longitude, String gravidade, LocalTime horario) {
-        this.id = id;
-        this.latitude = latitude;
-        this.longitude = longitude;
-        this.gravidade = gravidade;
-        this.horario = horario;
+
+    public Ocorrencia(double latitude, double longitude, LocalDate data, LocalTime hora,char natureza){
+        this.latitude=latitude;
+        this.longitude=longitude;
+        this.data=data;
+        this.hora=hora;
+        this.natureza=natureza;
+        switch (natureza) {
+            case 'A':
+                pesoDoCrime=4;
+                break;
+            case 'B':
+                pesoDoCrime=5;
+                break;
+                case 'C':
+                pesoDoCrime=1;
+                break;
+            case 'D':
+                pesoDoCrime=1;
+                break;
+                case 'E':
+                pesoDoCrime=2;
+                break;
+            case 'F':
+                pesoDoCrime=3;
+                break;
+            default:
+                break;
+        }
     }
 
-    public int getPesoGravidade() {
-        return switch (this.gravidade.toUpperCase()) {
-            case "A" -> 4;
-            case "B" -> 5;
-            case "C" -> 1;
-            case "D" -> 1;
-            case "E" -> 2;
-            case "F" -> 3;
-            default ->1;
-        };
+    public double getLatitude(){
+        return latitude;
     }
-
-    // Getters e Setters
-    public String getId() { return id; }
-    public double getLatitude() { return latitude; }
-    public double getLongitude() { return longitude; }
-    public String getGravidade() { return gravidade; }
-    public LocalTime getHorario() { return horario; }
+    public double getLongitude(){
+        return longitude;
+    }
+    public LocalDate getData(){
+        return data;
+    }
+    public LocalTime getHora(){
+        return hora;
+    }
+    public char getNatureza(){
+        return natureza;
+    }
+    public int getPeso(){
+        return pesoDoCrime;
+    }
 }
