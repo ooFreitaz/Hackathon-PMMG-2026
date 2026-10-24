@@ -7,6 +7,7 @@ public class Hexagono {
     private int[] OcorrenciasHorario; // Vetor de 24 posições (0 a 23 horas)
     private boolean temViaturaAlocada;
     private int nivelPerigo; // Nível de 1 a 5
+    
 
     public Hexagono(String h3Index) {
         this.h3Index = h3Index;
