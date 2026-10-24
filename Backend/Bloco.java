@@ -22,6 +22,13 @@ public class Bloco {
         }
         return todas;
     }
+    public int getScoreTotalBloco(int hora) {
+    int soma = 0;
+    for (Hexagono h : regiaoHexagonos) {
+        soma += h.getOcorrenciasHorario()[hora];
+    }
+    return soma;
+}
 
     // Getters
     public String getIdBloco() { return idBloco; }
