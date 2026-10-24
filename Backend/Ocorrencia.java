@@ -1,5 +1,5 @@
+package Backend;
 
-import Backend.*;
 import java.time.LocalTime;
 
 public class Ocorrencia {
