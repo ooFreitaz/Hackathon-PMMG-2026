@@ -1,5 +1,3 @@
-package Backend;
-
 public class CartaoPrograma {
     // Array de 24 posições indicando a postura da viatura para cada hora do dia (0h às 23h)
     // Ex: 1 = Patrulhamento ostensivo, 2 = Ponto de Presença Fixo (PB), 3 = Permanência em Ponto Crítico

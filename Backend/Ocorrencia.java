@@ -2,18 +2,16 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 public class Ocorrencia {
+    private String id;
     private double latitude;
     private double longitude;
-    private LocalDate data;
+    private char natureza; // Ex: "A", "B", "C"
     private LocalTime hora;
-    private char natureza;
     private int pesoDoCrime;
 
-
-    public Ocorrencia(double latitude, double longitude, LocalDate data, LocalTime hora,char natureza){
+    public Ocorrencia(double latitude, double longitude, LocalTime hora,char natureza){
         this.latitude=latitude;
         this.longitude=longitude;
-        this.data=data;
         this.hora=hora;
         this.natureza=natureza;
         switch (natureza) {
@@ -39,16 +37,14 @@ public class Ocorrencia {
                 break;
         }
     }
-
+    // Getters e Setters
     public double getLatitude(){
         return latitude;
     }
     public double getLongitude(){
         return longitude;
     }
-    public LocalDate getData(){
-        return data;
-    }
+    
     public LocalTime getHora(){
         return hora;
     }
@@ -58,4 +54,9 @@ public class Ocorrencia {
     public int getPeso(){
         return pesoDoCrime;
     }
+
+    // Getters e Setters
+    public String getId() 
+    { return id; }
+    
 }

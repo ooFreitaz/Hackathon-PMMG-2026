@@ -1,4 +1,3 @@
-package Backend;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,7 +22,7 @@ public class Hexagono {
     }
 
     private void atualizarNivelPerigo() {
-        int scoreTotal = ocorrencias.stream().mapToInt(Ocorrencia::getPesoGravidade).sum();
+        int scoreTotal = ocorrencias.stream().mapToInt(Ocorrencia::getPeso).sum();
         if (scoreTotal > 50) this.nivelPerigo = 5;
         else if (scoreTotal > 30) this.nivelPerigo = 4;
         else if (scoreTotal > 15) this.nivelPerigo = 3;

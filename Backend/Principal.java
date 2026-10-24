@@ -1,7 +1,8 @@
+import java.io.IOException;
 import java.util.List;
 
 public class Principal {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         LeitorDados leitor = new LeitorDados();
         
         List<Ocorrencia> lista = leitor.lerTodasOcorrencias("ocorrencias.txt");
@@ -12,8 +13,14 @@ public class Principal {
             Ocorrencia primeira = lista.get(0);
             Ocorrencia ultima = lista.get(lista.size() - 1);
 
-            System.out.println("Primeira Ocorrência -> Data: " + primeira.getData() + " | Natureza: " + primeira.getNatureza()+" | Hora: "+primeira.getHora());
-            System.out.println("Última Ocorrência   -> Data: " + ultima.getData() + " | Natureza: " + ultima.getNatureza());
+            System.out.println("Primeira Ocorrência -> Natureza: " + primeira.getNatureza()
+                    + " | Hora: " + primeira.getHora()
+                    + " | Latitude: " + primeira.getLatitude()
+                    + " | Longitude: " + primeira.getLongitude());
+            System.out.println("Última Ocorrência   -> Natureza: " + ultima.getNatureza()
+                    + " | Hora: " + ultima.getHora()
+                    + " | Latitude: " + ultima.getLatitude()
+                    + " | Longitude: " + ultima.getLongitude());
         }
     }
 }

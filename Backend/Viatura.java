@@ -1,5 +1,3 @@
-package Backend;
-
 public class Viatura {
     private String idViatura;
     private Hexagono posicaoAtual;
