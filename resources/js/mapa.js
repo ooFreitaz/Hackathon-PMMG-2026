@@ -1,28 +1,4 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <title>Malha Hexagonal Recortada no Contorno - deck.gl</title>
-  
-  <!-- CSS e Bibliotecas (MapLibre, deck.gl, Uber H3 e Turf.js) -->
-  <link href="https://unpkg.com/maplibre-gl@3.6.0/dist/maplibre-gl.css" rel="stylesheet" />
-  <script src="https://unpkg.com/maplibre-gl@3.6.0/dist/maplibre-gl.js"></script>
-  <script src="https://unpkg.com/deck.gl@8.9.33/dist.min.js"></script>
-  <script src="https://unpkg.com/h3-js@3.7.2/dist/h3-js.umd.js"></script>
-  
-  <!-- Biblioteca para Operações Geométricas e Recorte (Turf.js) -->
-  <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
-
-  <style>
-    body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; }
-    #map { width: 100%; height: 100%; }
-  </style>
-</head>
-<body>
-  <div id="map"></div>
-
-  <script>
-    window.onload = async () => {
+window.onload = async () => {
       if (typeof deck === 'undefined' || typeof h3 === 'undefined' || typeof turf === 'undefined') {
         console.error("Falha ao carregar dependências.");
         return;
@@ -30,7 +6,7 @@
 
       const deckgl = new deck.DeckGL({
         container: 'map',
-        mapStyle: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+        mapStyle: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
         initialViewState: {
           longitude: -44.0248,
           latitude: -19.8300,
@@ -43,7 +19,7 @@
       });
 
       try {
-        const resposta = await fetch('39_cia.geojson');
+        const resposta = await fetch('resources/js/39_cia.geojson');
         if (!resposta.ok) throw new Error("Erro ao carregar 39_cia.geojson");
         const geojsonData = await resposta.json();
 
@@ -134,6 +110,3 @@
         console.error("Erro ao processar e recortar malha H3:", erro);
       }
     };
-  </script>
-</body>
-</html>

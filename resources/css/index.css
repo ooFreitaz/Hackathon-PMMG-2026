@@ -1,0 +1,12 @@
+body { 
+    margin: 0; 
+    padding: px; 
+    width: 100vw; 
+    height: 100vh; 
+    overflow: hidden;
+}
+
+#map {
+    width: 70%; 
+    height: 100%; 
+}
