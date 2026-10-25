@@ -53,13 +53,13 @@ public class Hexagono {
             return;
         }
 
-        if (pesoHexagono >= mediaMapa * 1.50) {
+        if (pesoHexagono >= mediaMapa * 1.75) {
             this.nivelPerigo = 5; // >= 50% acima da média
-        } else if (pesoHexagono >= mediaMapa * 1.25) {
+        } else if (pesoHexagono >= mediaMapa * 1.50) {
             this.nivelPerigo = 4; // >= 25% acima da média
         } else if (pesoHexagono <= mediaMapa * 0.50) {
             this.nivelPerigo = 1; // <= 50% abaixo da média
-        } else if (pesoHexagono <= mediaMapa * 0.75) {
+        } else if (pesoHexagono <= mediaMapa * 0.25) {
             this.nivelPerigo = 2; // <= 25% abaixo da média
         } else {
             this.nivelPerigo = 3; // Na faixa entre -25% e +25% da média
@@ -73,4 +73,5 @@ public class Hexagono {
     public boolean isTemViaturaAlocada() { return temViaturaAlocada; }
     public void setTemViaturaAlocada(boolean temViaturaAlocada) { this.temViaturaAlocada = temViaturaAlocada; }
     public int getNivelPerigo() { return nivelPerigo; }
+    public void setNivelPerigo(int nivelPerigo){this.nivelPerigo = nivelPerigo;}
 }

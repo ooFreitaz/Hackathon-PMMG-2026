@@ -1,93 +1,85 @@
+import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpExchange;
+
 import java.io.IOException;
-import java.util.*;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
 
 public class Principal {
 
-    public static void main(String[] args) {
-        System.out.println("=== INICIANDO SISTEMA DE POSICIONAMENTO DE VIATURAS (5 VIATURAS) ===");
+    public static void main(String[] args) throws IOException {
+        HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
+        MapaController controller = new MapaController();
 
-        // 1. Instancia o leitor fornecido e lê a lista de ocorrências do arquivo TXT/JSON
-        LeitorDados leitor = new LeitorDados();
-        List<Ocorrencia> ocorrenciasLidas;
+        server.createContext("/api/dados-mapa", new HttpHandler() {
+            @Override
+            public void handle(HttpExchange exchange) throws IOException {
+                exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+                exchange.getResponseHeaders().add("Content-Type", "application/json");
 
-        try {
-            ocorrenciasLidas = leitor.lerTodasOcorrencias("ocorrencias.txt");
-            System.out.println("-> Arquivo processado com sucesso!");
-            System.out.println("-> Total de Ocorrências Importadas: " + ocorrenciasLidas.size());
-        } catch (IOException e) {
-            System.err.println("Erro ao carregar o arquivo de ocorrências: " + e.getMessage());
-            return;
-        }
+                String query = exchange.getRequestURI().getQuery();
+                int hora = 20; // Hora padrão
+                if (query != null && query.contains("hora=")) {
+                    try {
+                        hora = Integer.parseInt(query.split("hora=")[1].split("&")[0]);
+                    } catch (Exception ignored) {}
+                }
 
-        // 2. Simulação da malha de hexágonos cadastrados no mapa (Índices H3)
-        Map<String, Hexagono> mapaHexagonos = new HashMap<>();
-        
-        String[] h3Exemplos = {
-            "89a8a0233b3ffff", "89a8a0233b7ffff", "89a8a0233bbffff", 
-            "89a8a0233c3ffff", "89a8a0233c7ffff", "89a8a0233cbffff",
-            "89a8a0233d3ffff", "89a8a0233d7ffff", "89a8a0233dbffff",
-            "89a8a0233e3ffff"
-        };
+                Map<String, Object> dados = controller.getDadosMapa(hora);
+                String jsonResposta = serializarParaJSON(dados);
 
-        for (String idH3 : h3Exemplos) {
-            mapaHexagonos.put(idH3, new Hexagono(idH3));
-        }
-
-        // 3. Distribui as ocorrências lidas para os hexágonos da malha
-        // (Em produção, o H3 mapeia cada lat/lon para seu h3Index exato via h3.latLngToCell)
-        int index = 0;
-        for (Ocorrencia oc : ocorrenciasLidas) {
-            String targetH3 = h3Exemplos[index % h3Exemplos.length];
-            Hexagono hex = mapaHexagonos.get(targetH3);
-            hex.adicionarOcorrencia(oc);
-            index++;
-        }
-
-        List<Hexagono> listaHexagonos = new ArrayList<>(mapaHexagonos.values());
-
-        // 4. Avaliação de Perigo Relativo por Média para o Horário Escolhido (ex: 20h)
-        int horaAnalise = 20;
-        System.out.println("\n--- 1. AVALIAÇÃO DE PERIGO RELATIVO PARA AS " + horaAnalise + "h ---");
-        
-        ProcessadorPerigo perigoService = new ProcessadorPerigo();
-        perigoService.calcularPerigoDoMapaPorHora(listaHexagonos, horaAnalise);
-
-        for (Hexagono hex : listaHexagonos) {
-            int pesoNaHora = hex.getOcorrenciasHorario()[horaAnalise];
-            System.out.println("Hexágono [" + hex.getH3Index() 
-                    + "] | Peso Acumulado (" + horaAnalise + "h): " + pesoNaHora 
-                    + " | Nível de Perigo: " + hex.getNivelPerigo());
-        }
-
-        // 5. Agrupamento em 5 Blocos Equilibrados e Alocação de 5 Viaturas
-        int qtdViaturas = 5;
-        System.out.println("\n--- 2. DISTRIBUIÇÃO EM " + qtdViaturas + " BLOCOS DE PATRULHAMENTO ---");
-
-        AgrupadorBloco agrupadorService = new AgrupadorBloco();
-        List<Bloco> blocosGerados = agrupadorService.criarBlocosEquilibrados(listaHexagonos, qtdViaturas, horaAnalise);
-
-        // 6. Exibição da atribuição dos blocos e viaturas
-        for (int i = 0; i < blocosGerados.size(); i++) {
-            Bloco bloco = blocosGerados.get(i);
-            
-            Viatura viatura = new Viatura("VTR-" + (i + 1), bloco);
-            viatura.atualizarComportamentoPelaHora(horaAnalise);
-
-            if (!bloco.getRegiaoHexagonos().isEmpty()) {
-                Hexagono posicaoEstrategica = bloco.getRegiaoHexagonos().get(0);
-                viatura.setPosicaoAtual(posicaoEstrategica);
-                posicaoEstrategica.setTemViaturaAlocada(true);
+                byte[] respostaBytes = jsonResposta.getBytes(StandardCharsets.UTF_8);
+                exchange.sendResponseHeaders(200, respostaBytes.length);
+                OutputStream os = exchange.getResponseBody();
+                os.write(respostaBytes);
+                os.close();
             }
+        });
 
-            System.out.println("\n------------------------------------------------");
-            System.out.println("ID do Bloco: " + bloco.getIdBloco());
-            System.out.println("Hexágonos vinculados: " + bloco.getRegiaoHexagonos().size());
-            System.out.println("Carga de Perigo Total do Bloco: " + bloco.getScoreTotalBloco(horaAnalise));
-            System.out.println("Viatura Alocada: " + viatura.getIdViatura());
-            System.out.println("Posição Atual (H3): " + (viatura.getPosicaoAtual() != null ? viatura.getPosicaoAtual().getH3Index() : "N/A"));
-            System.out.println("Comportamento Operacional: " + viatura.getComportamentoAtual());
+        server.start();
+        System.out.println("=== SERVIDOR PMMG OPERACIONAL NA PORTA 8080 ===");
+    }
+
+    @SuppressWarnings("unchecked")
+    private static String serializarParaJSON(Map<String, Object> mapa) {
+        StringBuilder sb = new StringBuilder("{");
+
+        // Serializa a lista de Hexágonos
+        sb.append("\"hexagonos\":[");
+        List<Map<String, Object>> hexs = (List<Map<String, Object>>) mapa.get("hexagonos");
+        if (hexs != null) {
+            for (int i = 0; i < hexs.size(); i++) {
+                Map<String, Object> h = hexs.get(i);
+                sb.append("{")
+                  .append("\"h3Index\":\"").append(h.get("h3Index")).append("\",")
+                  .append("\"nivelPerigo\":").append(h.get("nivelPerigo"))
+                  .append("}");
+                if (i < hexs.size() - 1) sb.append(",");
+            }
         }
+        sb.append("],");
 
-        System.out.println("\n=== EXECUÇÃO CONCLUÍDA COM SUCESSO ===");
+        // Serializa a lista de Viaturas
+        sb.append("\"viaturas\":[");
+        List<Map<String, Object>> vtrs = (List<Map<String, Object>>) mapa.get("viaturas");
+        if (vtrs != null) {
+            for (int i = 0; i < vtrs.size(); i++) {
+                Map<String, Object> v = vtrs.get(i);
+                sb.append("{")
+                  .append("\"idViatura\":\"").append(v.get("idViatura")).append("\",")
+                  .append("\"idBloco\":\"").append(v.get("idBloco")).append("\",")
+                  .append("\"h3Index\":\"").append(v.get("h3Index")).append("\"")
+                  .append("}");
+                if (i < vtrs.size() - 1) sb.append(",");
+            }
+        }
+        sb.append("]");
+
+        sb.append("}");
+        return sb.toString();
     }
 }

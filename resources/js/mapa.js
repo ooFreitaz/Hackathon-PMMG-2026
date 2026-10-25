@@ -1,112 +1,179 @@
+/**
+ * INTEGRAÇÃO FRONT-END / BACK-END DA 39ª CIA
+ */
+let deckgl = null;
+let geojsonData = null;
+let horaAtual = 20;
+
+const API_URL = 'http://localhost:8080/api/dados-mapa';
+
 window.onload = async () => {
-      if (typeof deck === 'undefined' || typeof h3 === 'undefined' || typeof turf === 'undefined') {
-        console.error("Falha ao carregar dependências.");
-        return;
-      }
+  deckgl = new deck.DeckGL({
+    container: 'map',
+    mapStyle: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
+    initialViewState: {
+      longitude: -44.0508,
+      latitude: -19.8670,
+      zoom: 12.3,
+      pitch: 0,
+      bearing: 0
+    },
+    controller: true,
+    layers: []
+  });
 
-      const deckgl = new deck.DeckGL({
-        container: 'map',
-        mapStyle: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
-        initialViewState: {
-          longitude: -44.0508,
-          latitude: -19.8670,
-          zoom: 12.3,
-          pitch: 0,
-          bearing: 0
-        },
-        controller: true,
-        layers: []
+  try {
+    const res = await fetch('resources/js/39_cia.geojson');
+    geojsonData = await res.json();
+
+    // Carrega os dados iniciais das 20h
+    await carregarDadosEColorir(horaAtual);
+  } catch (err) {
+    console.error("Erro ao carregar mapa base:", err);
+  }
+};
+
+// Troca a hora e atualiza as cores do mapa
+async function selecionarHora(hora) {
+  horaAtual = hora;
+
+  // Atualiza label visual
+  const display = document.getElementById('display-hora-selecionada');
+  if (display) display.innerText = `${String(hora).padStart(2, '0')}:00 h`;
+
+  // Requisita a nova análise ao Java
+  await carregarDadosEColorir(hora);
+}
+
+async function carregarDadosEColorir(hora) {
+  try {
+    const resposta = await fetch(`${API_URL}?hora=${hora}`);
+    const dadosJava = await resposta.json();
+
+    desenharMalhaEViaturas(dadosJava);
+  } catch (err) {
+    console.error("Servidor Java não respondeu:", err);
+  }
+}
+
+function desenharMalhaEViaturas(dadosJava) {
+  if (!geojsonData) return;
+
+  // Paleta de Cores em RGBA [R, G, B, Opacidade]
+  const paletaCores = {
+    5: [47, 0, 48, 210],     // Nível 5: Roxo Escuro / Bordo Escuro (#2F0030) - Crítico
+    4: [207, 2, 0, 180],     // Nível 4: Vermelho (#CF0200) - Alto
+    3: [242, 67, 0, 160],    // Nível 3: Laranja Vivo (#F24300) - Médio
+    2: [227, 133, 0, 140],   // Nível 2: Laranja Fechado (#E38500) - Baixo
+    1: [238, 209, 0, 120]
+  };
+
+  // Mapeia perigo calculado pelo Java por h3Index
+  const mapaPerigo = {};
+  if (dadosJava && dadosJava.hexagonos) {
+    dadosJava.hexagonos.forEach(h => {
+      mapaPerigo[h.h3Index] = h.nivelPerigo;
+    });
+  }
+
+  // Recorte Geométrico do Contorno usando Turf.js
+  let mapBoundary = geojsonData.features[0];
+  if (geojsonData.features.length > 1) {
+    mapBoundary = turf.combine(geojsonData).features[0];
+  }
+
+  const hexagonesIndex = new Set();
+  geojsonData.features.forEach(f => {
+    let geoms = f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;
+    geoms.forEach(polygon => {
+      const coords = polygon[0].map(c => [c[1], c[0]]);
+      const innerHexes = h3.polyfill(coords, 9);
+      innerHexes.forEach(h => {
+        hexagonesIndex.add(h);
+        h3.kRing(h, 1).forEach(n => hexagonesIndex.add(n));
       });
+    });
+  });
 
-      try {
-        const resposta = await fetch('resources/js/39_cia.geojson');
-        if (!resposta.ok) throw new Error("Erro ao carregar 39_cia.geojson");
-        const geojsonData = await resposta.json();
+  const clippedHexagons = [];
+  Array.from(hexagonesIndex).forEach(hexId => {
+    const boundary = h3.h3ToGeoBoundary(hexId);
+    const coords = boundary.map(c => [c[1], c[0]]);
+    coords.push(coords[0]);
 
-        // Extrai a geometria unificada do contorno principal usando Turf
-        let mapBoundaryPolygon = geojsonData.features[0];
-        if (geojsonData.features.length > 1) {
-          mapBoundaryPolygon = turf.combine(geojsonData).features[0];
-        }
-
-        const hexagonesIndex = new Set();
-        
-        // 1. Coleta os hexágonos internos e os vizinhos da borda
-        geojsonData.features.forEach(feature => {
-          let geoms = [];
-          if (feature.geometry.type === "Polygon") {
-            geoms = [feature.geometry.coordinates];
-          } else if (feature.geometry.type === "MultiPolygon") {
-            geoms = feature.geometry.coordinates;
-          }
-
-          geoms.forEach(polygon => {
-            const polygonCoords = polygon[0].map(coord => [coord[1], coord[0]]);
-            const innerHexes = h3.polyfill(polygonCoords, 9);
-            
-            innerHexes.forEach(h => {
-              hexagonesIndex.add(h);
-              // Expande 1 anel para cobrir as extremidades da margem
-              const ring = h3.kRing(h, 1);
-              ring.forEach(neighbor => hexagonesIndex.add(neighbor));
-            });
-          });
-        });
-
-        // 2. Transforma os hexágonos em Polígonos e faz o RECORTE (intersect) com a borda do mapa
-        const clippedHexagons = [];
-
-        Array.from(hexagonesIndex).forEach(hexId => {
-          const boundary = h3.h3ToGeoBoundary(hexId);
-          // O H3 retorna [lat, lng], invertemos para [lng, lat] que o GeoJSON/Turf aceita
-          const coordinates = boundary.map(coord => [coord[1], coord[0]]);
-          // Fecha o anel do polígono
-          coordinates.push(coordinates[0]);
-
-          const hexPolygon = turf.polygon([coordinates]);
-
-          // Realiza o corte geométrico exato entre o hexágono e o contorno do mapa
-          try {
-            const intersection = turf.intersect(hexPolygon, mapBoundaryPolygon);
-            if (intersection) {
-              clippedHexagons.push(intersection);
-            }
-          } catch (e) {
-            // Em caso de falha de sobreposição exata no limite, ignora a célula inconsistente
-          }
-        });
-
-        // Cria a coleção de feições recortadas
-        const clippedGeoJSON = turf.featureCollection(clippedHexagons);
-
-        // 3. Camada dos Hexágonos Recortados (GeoJsonLayer para suportar geometrias recortadas)
-        const camadaHexagonos = new deck.GeoJsonLayer({
-          id: 'camada-malha-h3-clipped',
-          data: clippedGeoJSON,
-          filled: true,
-          stroke: true,
-          getFillColor: [255, 140, 0, 45],     // Laranja semi-transparente
-          getLineColor: [200, 80, 0, 180],     // Borda Laranja
-          getLineWidth: 1,
-          lineWidthUnits: 'pixels',
-          pickable: true
-        });
-
-        // 4. Camada do Contorno (Borda externa azul)
-        const camadaContorno = new deck.GeoJsonLayer({
-          id: 'camada-contorno',
-          data: geojsonData,
-          filled: false,
-          stroke: true,
-          getLineColor: [0, 50, 150, 255],
-          getLineWidth: 3,
-          lineWidthUnits: 'pixels'
-        });
-
-        deckgl.setProps({ layers: [camadaHexagonos, camadaContorno] });
-        console.log(`Malha preenchida e recortada com sucesso no contorno do mapa!`);
-
-      } catch (erro) {
-        console.error("Erro ao processar e recortar malha H3:", erro);
+    const hexPolygon = turf.polygon([coords]);
+    try {
+      const intersection = turf.intersect(hexPolygon, mapBoundary);
+      if (intersection) {
+        // Aplica a cor do nível de perigo calculado pelo Java para a hora
+        const nivel = mapaPerigo[hexId] || 1;
+        intersection.properties = {
+          h3Index: hexId,
+          nivelPerigo: nivel,
+          cor: paletaCores[nivel]
+        };
+        clippedHexagons.push(intersection);
       }
-    };
+    } catch (e) {}
+  });
+
+  const clippedGeoJSON = turf.featureCollection(clippedHexagons);
+
+  // Camada dos Hexágonos Recortados
+  const camadaHexagonos = new deck.GeoJsonLayer({
+    id: 'camada-malha-h3-clipped',
+    data: clippedGeoJSON,
+    filled: true,
+    stroke: true,
+    getFillColor: d => d.properties.cor,
+    getLineColor: [100, 40, 20, 150],
+    getLineWidth: 1,
+    lineWidthUnits: 'pixels',
+    updateTriggers: {
+      getFillColor: [horaAtual] // Garante que re-renderize as cores ao mudar a hora
+    }
+  });
+
+  // Camada do Contorno Azul
+  const camadaContorno = new deck.GeoJsonLayer({
+    id: 'camada-contorno',
+    data: geojsonData,
+    filled: false,
+    stroke: true,
+    getLineColor: [0, 80, 200, 255],
+    getLineWidth: 3,
+    lineWidthUnits: 'pixels'
+  });
+
+  // Camada das Viaturas
+  let camadaViaturas = null;
+  if (dadosJava && dadosJava.viaturas) {
+    const vtrData = dadosJava.viaturas.map(vtr => {
+      const centro = h3.h3ToGeo(vtr.h3Index);
+      return { id: vtr.idViatura, coordinates: [centro[1], centro[0]] };
+    });
+
+    camadaViaturas = new deck.IconLayer({
+      id: 'camada-viaturas',
+      data: vtrData,
+      getPosition: d => d.coordinates,
+      getIcon: d => ({
+        url: 'https://img.icons8.com/color/48/police-car.png',
+        width: 48,
+        height: 48,
+        anchorY: 48
+      }),
+      getSize: 36
+    });
+  }
+
+  const layers = [camadaHexagonos, camadaContorno];
+  if (camadaViaturas) layers.push(camadaViaturas);
+
+  deckgl.setProps({ layers });
+}
+
+function toggleMenuHoras() {
+  const modal = document.getElementById('modal-horas');
+  if (modal) modal.classList.toggle('hidden');
+}

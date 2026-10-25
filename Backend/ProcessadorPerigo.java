@@ -1,31 +1,103 @@
+/*import java.util.List;
+
+public class ProcessadorPerigo {
+
+    public void calcularPerigoDoMapaPorHora(List<Hexagono> hexagonos, int hora) {
+        if (hexagonos == null || hexagonos.isEmpty()) return;
+
+        // 1. Soma as ocorrências APENAS da hora selecionada
+        double somaHorario = 0;
+        int totalHexagonos = hexagonos.size();
+
+        for (Hexagono hex : hexagonos) {
+            somaHorario += hex.getOcorrenciasHorario()[hora];
+        }
+
+        // 2. Calcula a média do mapa especificamente para ESTA HORA
+        double mediaDaHora = somaHorario / totalHexagonos;
+
+        // Se não houver ocorrências nessa hora, define nível neutro (1) para todos
+        if (mediaDaHora == 0) {
+            for (Hexagono hex : hexagonos) {
+                hex.setNivelPerigo(1);
+            }
+            return;
+        }
+
+        // 3. Classifica os níveis de perigo (1 a 5) em relação à média da hora
+        for (Hexagono hex : hexagonos) {
+            int qtdNaHora = hex.getOcorrenciasHorario()[hora];
+            double razâo = (double) qtdNaHora / mediaDaHora;
+
+            if (razâo <= 0.5) {
+                hex.setNivelPerigo(1); // Muito abaixo da média da hora
+            } else if (razâo <= 0.9) {
+                hex.setNivelPerigo(2); // Ligeiramente abaixo
+            } else if (razâo <= 1.2) {
+                hex.setNivelPerigo(3); // Na média da hora
+            } else if (razâo <= 1.6) {
+                hex.setNivelPerigo(4); // Acima da média
+            } else {
+                hex.setNivelPerigo(5); // Ponto Crítico / Hotspot
+            }
+        }
+
+        System.out.println("=== AVALIAÇÃO DE PERIGO PARA AS " + hora + "h ===");
+        System.out.printf("Total Ocorrências na Hora: %.0f | Média da Hora: %.2f%n", somaHorario, mediaDaHora);
+    }
+}*/
+
 import java.util.List;
 
 public class ProcessadorPerigo {
 
-    /**
-     * Recalcula a média e aplica a classificação de perigo em todos os hexágonos para a hora informada.
-     * @param todosHexagonos Lista com todos os hexágonos da malha
-     * @param hora Hora selecionada para análise (0 a 23)
-     */
-    public void calcularPerigoDoMapaPorHora(List<Hexagono> todosHexagonos, int hora) {
-        if (todosHexagonos == null || todosHexagonos.isEmpty()) {
+    public void calcularPerigoDoMapaPorHora(List<Hexagono> hexagonos, int hora) {
+        if (hexagonos == null || hexagonos.isEmpty()) return;
+
+        // 1. Soma do peso de TODOS os hexágonos do mapa na hora selecionada
+        double somaPesosHorario = 0;
+        int totalHexagonosMapa = hexagonos.size(); // Quantidade total (ex: 162 hexágonos)
+
+        for (Hexagono hex : hexagonos) {
+            somaPesosHorario += hex.getOcorrenciasHorario()[hora];
+        }
+
+        // 2. Média global do mapa inteiro (260 / 162.5 = 1.6)
+        double mediaGeralMapa = somaPesosHorario / totalHexagonosMapa;
+
+        // Se não houver nenhuma ocorrência na hora em todo o mapa
+        if (mediaGeralMapa == 0) {
+            for (Hexagono hex : hexagonos) {
+                hex.setNivelPerigo(1);
+            }
             return;
         }
 
-        // 1. Calcula a soma total dos pesos de todos os hexágonos na hora especificada
-        int somaPesosHexagonos = 0;
-        for (Hexagono hex : todosHexagonos) {
-            somaPesosHexagonos += hex.getOcorrenciasHorario()[hora];
+        // 3. Classificação em relação à Média Global (Leva TODOS em consideração)
+        for (Hexagono hex : hexagonos) {
+            int pesoHex = hex.getOcorrenciasHorario()[hora];
+
+            if (pesoHex == 0) {
+                // Hexágono sem nenhuma ocorrência no horário
+                hex.setNivelPerigo(1);
+            } else {
+                // Compara o peso do hexágono com a média global do mapa
+                double razao = pesoHex / mediaGeralMapa;
+
+                if (razao < 1.0) {
+                    hex.setNivelPerigo(2); // Abaixo da média do mapa (ex: peso 1)
+                } else if (razao <= 2.0) {
+                    hex.setNivelPerigo(3); // Na média ou pouco acima (ex: peso 2 ou 3)
+                } else if (razao <= 4.0) {
+                    hex.setNivelPerigo(4); // Relevante / Alto (ex: peso 4 a 6)
+                } else {
+                    hex.setNivelPerigo(5); // Hotspot / Crítico (peso muito acima da média)
+                }
+            }
         }
 
-        // 2. Calcula a média do mapa
-        double mediaMapa = (double) somaPesosHexagonos / todosHexagonos.size();
-
-        // 3. Atualiza o nível de perigo de cada hexágono individualmente com base na média obtida
-        for (Hexagono hex : todosHexagonos) {
-            hex.atualizarNivelPerigoPorHora(mediaMapa, hora);
-        }
-
-        System.out.println("Processamento Concluído para a Hora: " + hora + "h | Média do Mapa: " + mediaMapa);
+        System.out.println("=== AVALIAÇÃO DE PERIGO - " + hora + "h ===");
+        System.out.printf("Peso Total do Mapa: %.0f | Total de Hexágonos: %d | Média Global: %.2f%n", 
+            somaPesosHorario, totalHexagonosMapa, mediaGeralMapa);
     }
 }
