@@ -1,9 +1,18 @@
 /**
  * INTEGRAÇÃO FRONT-END / BACK-END DA 39ª CIA
+ * Mapeamento dinâmico, hexágonos recortados, posicionamento de VTRs e seleção de horas.
  */
 let deckgl = null;
 let geojsonData = null;
 let horaAtual = 20;
+
+const estadoViaturas = {
+  "VTR-1": true,
+  "VTR-2": true,
+  "VTR-3": true,
+  "VTR-4": true,
+  "VTR-5": true
+};
 
 const API_URL = 'http://localhost:8080/api/dados-mapa';
 
@@ -33,21 +42,30 @@ window.onload = async () => {
   }
 };
 
-// Troca a hora e atualiza as cores do mapa
+// Troca a hora e atualiza as cores da malha no mapa
 async function selecionarHora(hora) {
   horaAtual = hora;
 
-  // Atualiza label visual
+  // Atualiza label visual no painel
   const display = document.getElementById('display-hora-selecionada');
   if (display) display.innerText = `${String(hora).padStart(2, '0')}:00 h`;
 
-  // Requisita a nova análise ao Java
+  // Oculta o modal de seleção de hora
+  const modal = document.getElementById('modal-horas');
+  if (modal) modal.classList.add('hidden');
+
+  // Requisita a nova análise ao servidor Java
   await carregarDadosEColorir(hora);
 }
 
+// Envia a hora e a lista de VTRs operacionais ao Java
 async function carregarDadosEColorir(hora) {
   try {
-    const resposta = await fetch(`${API_URL}?hora=${hora}`);
+    const viaturasAtivas = Object.keys(estadoViaturas)
+      .filter(vtr => estadoViaturas[vtr])
+      .join(',');
+
+    const resposta = await fetch(`${API_URL}?hora=${hora}&ativas=${viaturasAtivas}`);
     const dadosJava = await resposta.json();
 
     desenharMalhaEViaturas(dadosJava);
@@ -56,16 +74,47 @@ async function carregarDadosEColorir(hora) {
   }
 }
 
+// Alterna status da VTR e recalcula posições das demais no Java
+function toggleAtendimentoViatura(idViatura, buttonElement) {
+  estadoViaturas[idViatura] = !estadoViaturas[idViatura];
+  const estaAtiva = estadoViaturas[idViatura];
+
+  const spanTexto = buttonElement.querySelector('span.text-slate-300, span.text-amber-300');
+  const dotStatus = buttonElement.querySelector('.bg-cyan-400, .bg-amber-500');
+
+  if (estaAtiva) {
+    if (spanTexto) {
+      spanTexto.innerText = "Colocar em atendimento";
+      spanTexto.className = "text-slate-300 text-[10px] sm:text-xs lg:text-sm font-medium group-hover:text-white transition-colors text-left leading-tight mt-1";
+    }
+    if (dotStatus) {
+      dotStatus.className = "w-1.5 h-1.5 lg:w-2 lg:h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#22d3ee] animate-pulse";
+    }
+    buttonElement.classList.remove('border-amber-500/50', 'bg-amber-950/20');
+  } else {
+    if (spanTexto) {
+      spanTexto.innerText = "Em atendimento (Retornar)";
+      spanTexto.className = "text-amber-300 text-[10px] sm:text-xs lg:text-sm font-bold transition-colors text-left leading-tight mt-1";
+    }
+    if (dotStatus) {
+      dotStatus.className = "w-1.5 h-1.5 lg:w-2 lg:h-2 rounded-full bg-amber-500 shadow-[0_0_6px_#f59e0b]";
+    }
+    buttonElement.classList.add('border-amber-500/50', 'bg-amber-950/20');
+  }
+
+  carregarDadosEColorir(horaAtual);
+}
+
 function desenharMalhaEViaturas(dadosJava) {
   if (!geojsonData) return;
 
   // Paleta de Cores em RGBA [R, G, B, Opacidade]
   const paletaCores = {
-    5: [47, 0, 48, 210],     // Nível 5: Roxo Escuro / Bordo Escuro (#2F0030) - Crítico
+    5: [47, 0, 48, 210],     // Nível 5: Roxo Escuro (#2F0030) - Crítico
     4: [207, 2, 0, 180],     // Nível 4: Vermelho (#CF0200) - Alto
     3: [242, 67, 0, 160],    // Nível 3: Laranja Vivo (#F24300) - Médio
     2: [227, 133, 0, 140],   // Nível 2: Laranja Fechado (#E38500) - Baixo
-    1: [238, 209, 0, 120]
+    1: [238, 209, 0, 120]    // Nível 1: Amarelo (#EED100) - Muito Baixo
   };
 
   // Mapeia perigo calculado pelo Java por h3Index
@@ -105,12 +154,12 @@ function desenharMalhaEViaturas(dadosJava) {
     try {
       const intersection = turf.intersect(hexPolygon, mapBoundary);
       if (intersection) {
-        // Aplica a cor do nível de perigo calculado pelo Java para a hora
-        const nivel = mapaPerigo[hexId] || 1;
+        // Aplica o nível de perigo dinâmico retornado do Java
+        const nivel = mapaPerigo[hexId] !== undefined ? mapaPerigo[hexId] : 1;
         intersection.properties = {
           h3Index: hexId,
           nivelPerigo: nivel,
-          cor: paletaCores[nivel]
+          cor: paletaCores[nivel] || paletaCores[1]
         };
         clippedHexagons.push(intersection);
       }
@@ -119,9 +168,10 @@ function desenharMalhaEViaturas(dadosJava) {
 
   const clippedGeoJSON = turf.featureCollection(clippedHexagons);
 
-  // Camada dos Hexágonos Recortados
+  // 1. CAMADA DOS HEXÁGONOS RECORTADOS
+  // Nota: O ID inclui 'horaAtual' e um timestamp/random para invalidar o cache do deck.gl
   const camadaHexagonos = new deck.GeoJsonLayer({
-    id: 'camada-malha-h3-clipped',
+    id: `camada-malha-h3-${horaAtual}-${Date.now()}`,
     data: clippedGeoJSON,
     filled: true,
     stroke: true,
@@ -130,11 +180,11 @@ function desenharMalhaEViaturas(dadosJava) {
     getLineWidth: 1,
     lineWidthUnits: 'pixels',
     updateTriggers: {
-      getFillColor: [horaAtual] // Garante que re-renderize as cores ao mudar a hora
+      getFillColor: [horaAtual, JSON.stringify(mapaPerigo)]
     }
   });
 
-  // Camada do Contorno Azul
+  // 2. CAMADA DO CONTORNO AZUL DA 39ª CIA
   const camadaContorno = new deck.GeoJsonLayer({
     id: 'camada-contorno',
     data: geojsonData,
@@ -145,16 +195,18 @@ function desenharMalhaEViaturas(dadosJava) {
     lineWidthUnits: 'pixels'
   });
 
-  // Camada das Viaturas
+  // 3. CAMADA DAS VIATURAS
   let camadaViaturas = null;
-  if (dadosJava && dadosJava.viaturas) {
-    const vtrData = dadosJava.viaturas.map(vtr => {
-      const centro = h3.h3ToGeo(vtr.h3Index);
-      return { id: vtr.idViatura, coordinates: [centro[1], centro[0]] };
-    });
+  if (dadosJava && dadosJava.viaturas && dadosJava.viaturas.length > 0) {
+    const vtrData = dadosJava.viaturas
+      .filter(vtr => vtr.h3Index && vtr.h3Index.trim() !== '')
+      .map(vtr => {
+        const centro = h3.h3ToGeo(vtr.h3Index);
+        return { id: vtr.idViatura, coordinates: [centro[1], centro[0]] };
+      });
 
     camadaViaturas = new deck.IconLayer({
-      id: 'camada-viaturas',
+      id: `camada-viaturas-${Date.now()}`,
       data: vtrData,
       getPosition: d => d.coordinates,
       getIcon: d => ({
@@ -163,10 +215,14 @@ function desenharMalhaEViaturas(dadosJava) {
         height: 48,
         anchorY: 48
       }),
-      getSize: 36
+      getSize: 36,
+      updateTriggers: {
+        data: [horaAtual, vtrData.length]
+      }
     });
   }
 
+  // Monta as camadas ativas
   const layers = [camadaHexagonos, camadaContorno];
   if (camadaViaturas) layers.push(camadaViaturas);
 

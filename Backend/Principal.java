@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -18,18 +20,39 @@ public class Principal {
         server.createContext("/api/dados-mapa", new HttpHandler() {
             @Override
             public void handle(HttpExchange exchange) throws IOException {
+                // Configuração dos cabeçalhos CORS
                 exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-                exchange.getResponseHeaders().add("Content-Type", "application/json");
+                exchange.getResponseHeaders().add("Content-Type", "application/json; charset=UTF-8");
 
                 String query = exchange.getRequestURI().getQuery();
-                int hora = 20; // Hora padrão
-                if (query != null && query.contains("hora=")) {
-                    try {
-                        hora = Integer.parseInt(query.split("hora=")[1].split("&")[0]);
-                    } catch (Exception ignored) {}
+                int hora = 20; // Hora padrão de análise
+                String ativasParam = "VTR-1,VTR-2,VTR-3,VTR-4,VTR-5"; // Padrão: todas operacionais
+
+                if (query != null) {
+                    for (String param : query.split("&")) {
+                        if (param.startsWith("hora=")) {
+                            try { 
+                                hora = Integer.parseInt(param.split("=")[1]); 
+                            } catch (Exception ignored) {}
+                        } else if (param.startsWith("ativas=")) {
+                            String[] partes = param.split("=");
+                            if (partes.length > 1) {
+                                ativasParam = partes[1];
+                            } else {
+                                ativasParam = "";
+                            }
+                        }
+                    }
                 }
 
-                Map<String, Object> dados = controller.getDadosMapa(hora);
+                // Cria a lista de viaturas operacionais
+                List<String> viaturasAtivas = new ArrayList<>();
+                if (!ativasParam.trim().isEmpty()) {
+                    viaturasAtivas = Arrays.asList(ativasParam.split(","));
+                }
+
+                // Obtém os dados do MapaController
+                Map<String, Object> dados = controller.getDadosMapa(hora, viaturasAtivas);
                 String jsonResposta = serializarParaJSON(dados);
 
                 byte[] respostaBytes = jsonResposta.getBytes(StandardCharsets.UTF_8);
@@ -46,12 +69,14 @@ public class Principal {
 
     @SuppressWarnings("unchecked")
     private static String serializarParaJSON(Map<String, Object> mapa) {
+        if (mapa == null) return "{\"hexagonos\":[],\"viaturas\":[]}";
+
         StringBuilder sb = new StringBuilder("{");
 
-        // Serializa a lista de Hexágonos
+        // 1. Serializa a lista de Hexágonos com Nível de Perigo
         sb.append("\"hexagonos\":[");
         List<Map<String, Object>> hexs = (List<Map<String, Object>>) mapa.get("hexagonos");
-        if (hexs != null) {
+        if (hexs != null && !hexs.isEmpty()) {
             for (int i = 0; i < hexs.size(); i++) {
                 Map<String, Object> h = hexs.get(i);
                 sb.append("{")
@@ -63,10 +88,10 @@ public class Principal {
         }
         sb.append("],");
 
-        // Serializa a lista de Viaturas
+        // 2. Serializa as Viaturas
         sb.append("\"viaturas\":[");
         List<Map<String, Object>> vtrs = (List<Map<String, Object>>) mapa.get("viaturas");
-        if (vtrs != null) {
+        if (vtrs != null && !vtrs.isEmpty()) {
             for (int i = 0; i < vtrs.size(); i++) {
                 Map<String, Object> v = vtrs.get(i);
                 sb.append("{")

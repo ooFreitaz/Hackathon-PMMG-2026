@@ -43,8 +43,8 @@
               Hackathon PMMG - 2026
           </h1>
           <!-- Logo Placeholder -->
-          <div class="">
-              <img src="resources/img/logo.png" alt="Logo" class="w-16 h-">
+          <div>
+              <img src="resources/img/logo.png" alt="Logo" class="w-16">
           </div>
       </div>
       
@@ -55,15 +55,13 @@
       </div>
   </header>
 
-  <!-- Conteúdo Principal (Grid/Flexbox Responsivo) -->
-  <!-- Conteúdo Principal (Grid Responsivo) -->
   <!-- Conteúdo Principal (Grid Ajustado e Expandido) -->
   <main class="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8 flex-1 h-full w-full">
       
       <!-- COLUNA ESQUERDA: Mapa Expandido na Horizontal -->
       <section class="w-full lg:w-[68%] flex flex-col gap-4 h-full">
           
-          <!-- Container do Mapa (Aumentado em largura) -->
+          <!-- Container do Mapa -->
           <div class="map-wrapper w-full flex-1 min-h-[300px] sm:min-h-[400px] lg:min-h-0 flex flex-col">
               <!-- Cantoneiras tecnológicas -->
               <div class="b-tl bracket"></div>
@@ -139,7 +137,7 @@
 
           <!-- VTR-1 -->
           <div class="grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4">
-              <button class="glass glow-cyan rounded-xl p-2.5 sm:p-3 lg:p-4 flex flex-col justify-center items-start cursor-pointer group relative overflow-hidden">
+              <button onclick="toggleAtendimentoViatura('VTR-1', this)" class="glass glow-cyan rounded-xl p-2.5 sm:p-3 lg:p-4 flex flex-col justify-center items-start cursor-pointer group relative overflow-hidden transition-all">
                   <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
                   <div class="flex items-center justify-between w-full mb-1 sm:mb-2">
                       <div class="relative">
@@ -163,7 +161,7 @@
 
           <!-- VTR-2 -->
           <div class="grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4">
-              <button class="glass glow-cyan rounded-xl p-2.5 sm:p-3 lg:p-4 flex flex-col justify-center items-start cursor-pointer group relative overflow-hidden">
+              <button onclick="toggleAtendimentoViatura('VTR-2', this)" class="glass glow-cyan rounded-xl p-2.5 sm:p-3 lg:p-4 flex flex-col justify-center items-start cursor-pointer group relative overflow-hidden transition-all">
                   <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
                   <div class="flex items-center justify-between w-full mb-1 sm:mb-2">
                       <div class="relative">
@@ -187,7 +185,7 @@
 
           <!-- VTR-3 -->
           <div class="grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4">
-              <button class="glass glow-cyan rounded-xl p-2.5 sm:p-3 lg:p-4 flex flex-col justify-center items-start cursor-pointer group relative overflow-hidden">
+              <button onclick="toggleAtendimentoViatura('VTR-3', this)" class="glass glow-cyan rounded-xl p-2.5 sm:p-3 lg:p-4 flex flex-col justify-center items-start cursor-pointer group relative overflow-hidden transition-all">
                   <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
                   <div class="flex items-center justify-between w-full mb-1 sm:mb-2">
                       <div class="relative">
@@ -211,7 +209,7 @@
 
           <!-- VTR-4 -->
           <div class="grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4">
-              <button class="glass glow-cyan rounded-xl p-2.5 sm:p-3 lg:p-4 flex flex-col justify-center items-start cursor-pointer group relative overflow-hidden">
+              <button onclick="toggleAtendimentoViatura('VTR-4', this)" class="glass glow-cyan rounded-xl p-2.5 sm:p-3 lg:p-4 flex flex-col justify-center items-start cursor-pointer group relative overflow-hidden transition-all">
                   <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
                   <div class="flex items-center justify-between w-full mb-1 sm:mb-2">
                       <div class="relative">
@@ -235,7 +233,7 @@
 
           <!-- VTR-5 -->
           <div class="grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4">
-              <button class="glass glow-cyan rounded-xl p-2.5 sm:p-3 lg:p-4 flex flex-col justify-center items-start cursor-pointer group relative overflow-hidden">
+              <button onclick="toggleAtendimentoViatura('VTR-5', this)" class="glass glow-cyan rounded-xl p-2.5 sm:p-3 lg:p-4 flex flex-col justify-center items-start cursor-pointer group relative overflow-hidden transition-all">
                   <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
                   <div class="flex items-center justify-between w-full mb-1 sm:mb-2">
                       <div class="relative">
@@ -260,6 +258,7 @@
       </section>
   </main>
 
+  <!-- Script principal carregado no final do corpo -->
   <script src="resources/js/mapa.js"></script>
 </body>
 </html>

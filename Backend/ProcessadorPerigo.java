@@ -83,12 +83,14 @@ public class ProcessadorPerigo {
             } else {
                 // Compara o peso do hexágono com a média global do mapa
                 double razao = pesoHex / mediaGeralMapa;
-
-                if (razao < 1.0) {
+                if(razao < 1){
+                    hex.setNivelPerigo(2);
+                }
+                else if (razao < 2) {
                     hex.setNivelPerigo(2); // Abaixo da média do mapa (ex: peso 1)
-                } else if (razao <= 2.0) {
+                } else if (razao <= 3) {
                     hex.setNivelPerigo(3); // Na média ou pouco acima (ex: peso 2 ou 3)
-                } else if (razao <= 4.0) {
+                } else if (razao <= 4) {
                     hex.setNivelPerigo(4); // Relevante / Alto (ex: peso 4 a 6)
                 } else {
                     hex.setNivelPerigo(5); // Hotspot / Crítico (peso muito acima da média)

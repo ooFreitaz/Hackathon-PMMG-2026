@@ -22,69 +22,70 @@ public class MapaController {
         }
     }
 
-    public Map<String, Object> getDadosMapa(int hora) {
-        Map<String, Object> resposta = new HashMap<>();
+    public Map<String, Object> getDadosMapa(int hora, List<String> viaturasAtivas) {
+    Map<String, Object> resposta = new HashMap<>();
 
-        try {
-            // 1. Lê todas as ocorrências do arquivo de texto
-            List<Ocorrencia> ocorrencias = leitorDados.lerTodasOcorrencias("ocorrencias.txt");
+    try {
+        // 1. Lê as ocorrências salvas em memória
+        List<Ocorrencia> ocorrencias = leitorDados.lerTodasOcorrencias("ocorrencias.txt");
 
-            // 2. Mapeamento Dinâmico: Converte Lat/Lon em Hexágonos H3 de Resolução 9
-            Map<String, Hexagono> mapaHexagonos = new HashMap<>();
+        // 2. Mapeia as ocorrências para os hexágonos H3
+        Map<String, Hexagono> mapaHexagonos = new HashMap<>();
+        for (Ocorrencia oc : ocorrencias) {
+            String h3Index = h3.geoToH3Address(oc.getLatitude(), oc.getLongitude(), 9);
+            mapaHexagonos.putIfAbsent(h3Index, new Hexagono(h3Index));
+            mapaHexagonos.get(h3Index).adicionarOcorrencia(oc);
+        }
 
-            for (Ocorrencia oc : ocorrencias) {
-                String h3Index;
-                if (h3 != null) {
-                    // Mapeia coordenadas reais para a célula H3
-                    h3Index = h3.geoToH3Address(oc.getLatitude(), oc.getLongitude(), 9);
-                } else {
-                    // Fallback caso a lib H3 não esteja no classpath
-                    h3Index = "89a8a0233b3ffff";
-                }
+        List<Hexagono> listaHexagonos = new ArrayList<>(mapaHexagonos.values());
 
-                mapaHexagonos.putIfAbsent(h3Index, new Hexagono(h3Index));
-                mapaHexagonos.get(h3Index).adicionarOcorrencia(oc);
-            }
+        // 3. RECALCULA A MÉDIA DA HORA
+        perigoService.calcularPerigoDoMapaPorHora(listaHexagonos, hora);
 
-            List<Hexagono> listaHexagonos = new ArrayList<>(mapaHexagonos.values());
+        // 4. DISTRIBUI APENAS AS VIATURAS OPERACIONAIS
+        List<Map<String, Object>> viaturasDTO = new ArrayList<>();
+        int qtdAtivas = (viaturasAtivas != null) ? viaturasAtivas.size() : 0;
 
-            // 3. Processa o Nível de Perigo Relativo (1 a 5) baseado na hora selecionada
-            perigoService.calcularPerigoDoMapaPorHora(listaHexagonos, hora);
+        if (qtdAtivas > 0) {
+            List<Bloco> blocos = agrupadorService.criarBlocosEquilibrados(listaHexagonos, qtdAtivas, hora);
 
-            // 4. Agrupa os blocos e aloca as 5 viaturas
-            List<Bloco> blocos = agrupadorService.criarBlocosEquilibrados(listaHexagonos, 5, hora);
-
-            // 5. Monta DTO das Viaturas
-            List<Map<String, Object>> viaturasDTO = new ArrayList<>();
             for (int i = 0; i < blocos.size(); i++) {
                 Bloco b = blocos.get(i);
                 if (!b.getRegiaoHexagonos().isEmpty()) {
                     Map<String, Object> vtrMap = new HashMap<>();
-                    vtrMap.put("idViatura", "VTR-" + (i + 1));
+                    // Atribui o ID da viatura operacional (ex: VTR-1, VTR-3)
+                    vtrMap.put("idViatura", viaturasAtivas.get(i));
                     vtrMap.put("idBloco", b.getIdBloco());
                     vtrMap.put("h3Index", b.getRegiaoHexagonos().get(0).getH3Index());
                     viaturasDTO.add(vtrMap);
                 }
             }
-
-            // 6. Monta DTO dos Hexágonos com os Níveis de Perigo Calculados (1 a 5)
-            List<Map<String, Object>> hexDTO = new ArrayList<>();
-            for (Hexagono h : listaHexagonos) {
-                Map<String, Object> item = new HashMap<>();
-                item.put("h3Index", h.getH3Index());
-                item.put("nivelPerigo", h.getNivelPerigo());
-                item.put("ocorrenciasNaHora", h.getOcorrenciasHorario()[hora]);
-                hexDTO.add(item);
-            }
-
-            resposta.put("hexagonos", hexDTO);
-            resposta.put("viaturas", viaturasDTO);
-
-        } catch (Exception e) {
-            System.err.println("Erro no MapaController: " + e.getMessage());
-            resposta.put("erro", e.getMessage());
         }
 
-        return resposta;
+        // 5. MONTA DTO DOS HEXÁGONOS (Garante que nivelPerigo seja retornado)
+        List<Map<String, Object>> hexDTO = new ArrayList<>();
+        for (Hexagono h : listaHexagonos) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("h3Index", h.getH3Index());
+            item.put("nivelPerigo", h.getNivelPerigo()); // Valores de 1 a 5
+            hexDTO.add(item);
+        }
+
+        resposta.put("hexagonos", hexDTO);
+        resposta.put("viaturas", viaturasDTO);
+
+    } catch (Exception e) {
+        System.err.println("Erro ao calcular dados do mapa: " + e.getMessage());
+        e.printStackTrace();
+        resposta.put("hexagonos", new ArrayList<>());
+        resposta.put("viaturas", new ArrayList<>());
     }
+
+    return resposta;
+}
+
+// Sobrecarga para evitar que chamadas antigas sem a lista de VTRs quebrem
+public Map<String, Object> getDadosMapa(int hora) {
+    return getDadosMapa(hora, Arrays.asList("VTR-1", "VTR-2", "VTR-3", "VTR-4", "VTR-5"));
+}
 }
