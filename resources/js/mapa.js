@@ -1,6 +1,6 @@
 /**
  * INTEGRAÇÃO FRONT-END / BACK-END DA 39ª CIA
- * Mapeamento dinâmico, hexágonos recortados, posicionamento de VTRs e seleção de horas.
+ * Mapeamento dinâmico, hexágonos recortados, exibição de peso, posicionamento de VTRs e seleção de horas.
  */
 let deckgl = null;
 let geojsonData = null;
@@ -117,11 +117,13 @@ function desenharMalhaEViaturas(dadosJava) {
     1: [238, 209, 0, 120]    // Nível 1: Amarelo (#EED100) - Muito Baixo
   };
 
-  // Mapeia perigo calculado pelo Java por h3Index
+  // Mapeia perigo e peso calculados pelo Java por h3Index
   const mapaPerigo = {};
+  const mapaPeso = {};
   if (dadosJava && dadosJava.hexagonos) {
     dadosJava.hexagonos.forEach(h => {
       mapaPerigo[h.h3Index] = h.nivelPerigo;
+      mapaPeso[h.h3Index] = h.pesoHorario || 0;
     });
   }
 
@@ -145,6 +147,8 @@ function desenharMalhaEViaturas(dadosJava) {
   });
 
   const clippedHexagons = [];
+  const dadosTextoHex = [];
+
   Array.from(hexagonesIndex).forEach(hexId => {
     const boundary = h3.h3ToGeoBoundary(hexId);
     const coords = boundary.map(c => [c[1], c[0]]);
@@ -154,22 +158,30 @@ function desenharMalhaEViaturas(dadosJava) {
     try {
       const intersection = turf.intersect(hexPolygon, mapBoundary);
       if (intersection) {
-        // Aplica o nível de perigo dinâmico retornado do Java
         const nivel = mapaPerigo[hexId] !== undefined ? mapaPerigo[hexId] : 1;
+        const peso = mapaPeso[hexId] !== undefined ? mapaPeso[hexId] : 0;
+
         intersection.properties = {
           h3Index: hexId,
           nivelPerigo: nivel,
           cor: paletaCores[nivel] || paletaCores[1]
         };
         clippedHexagons.push(intersection);
+
+        // Adiciona ao texto para exibir no centro
+        const centro = turf.centroid(intersection);
+        dadosTextoHex.push({
+          coordinates: centro.geometry.coordinates,
+          texto: String(peso),
+          nivel: nivel
+        });
       }
     } catch (e) {}
   });
 
   const clippedGeoJSON = turf.featureCollection(clippedHexagons);
 
-  // 1. CAMADA DOS HEXÁGONOS RECORTADOS
-  // Nota: O ID inclui 'horaAtual' e um timestamp/random para invalidar o cache do deck.gl
+  // 1. CAMADA DOS HEXÁGONOS RECORTADOS (Cores de Risco)
   const camadaHexagonos = new deck.GeoJsonLayer({
     id: `camada-malha-h3-${horaAtual}-${Date.now()}`,
     data: clippedGeoJSON,
@@ -184,7 +196,25 @@ function desenharMalhaEViaturas(dadosJava) {
     }
   });
 
-  // 2. CAMADA DO CONTORNO AZUL DA 39ª CIA
+  // 2. CAMADA DOS NÚMEROS (Peso Real das Ocorrências)
+  const camadaTextos = new deck.TextLayer({
+    id: `camada-texto-pontuacao-${horaAtual}-${Date.now()}`,
+    data: dadosTextoHex,
+    getPosition: d => d.coordinates,
+    getText: d => d.texto,
+    getSize: 11,
+    getColor: d => d.nivel >= 4 ? [255, 255, 255, 240] : [15, 23, 42, 220],
+    getTextAnchor: 'middle',
+    getAlignmentBaseline: 'center',
+    fontFamily: 'Inter, monospace, sans-serif',
+    fontWeight: 'bold',
+    updateTriggers: {
+      getText: [horaAtual, JSON.stringify(mapaPeso)],
+      getColor: [horaAtual, JSON.stringify(mapaPerigo)]
+    }
+  });
+
+  // 3. CAMADA DO CONTORNO AZUL DA 39ª CIA
   const camadaContorno = new deck.GeoJsonLayer({
     id: 'camada-contorno',
     data: geojsonData,
@@ -195,7 +225,7 @@ function desenharMalhaEViaturas(dadosJava) {
     lineWidthUnits: 'pixels'
   });
 
-  // 3. CAMADA DAS VIATURAS
+  // 4. CAMADA DAS VIATURAS
   let camadaViaturas = null;
   if (dadosJava && dadosJava.viaturas && dadosJava.viaturas.length > 0) {
     const vtrData = dadosJava.viaturas
@@ -223,7 +253,7 @@ function desenharMalhaEViaturas(dadosJava) {
   }
 
   // Monta as camadas ativas
-  const layers = [camadaHexagonos, camadaContorno];
+  const layers = [camadaHexagonos, camadaTextos, camadaContorno];
   if (camadaViaturas) layers.push(camadaViaturas);
 
   deckgl.setProps({ layers });

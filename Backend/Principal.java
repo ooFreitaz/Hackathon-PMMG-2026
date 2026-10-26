@@ -20,13 +20,12 @@ public class Principal {
         server.createContext("/api/dados-mapa", new HttpHandler() {
             @Override
             public void handle(HttpExchange exchange) throws IOException {
-                // Configuração dos cabeçalhos CORS
                 exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
                 exchange.getResponseHeaders().add("Content-Type", "application/json; charset=UTF-8");
 
                 String query = exchange.getRequestURI().getQuery();
-                int hora = 20; // Hora padrão de análise
-                String ativasParam = "VTR-1,VTR-2,VTR-3,VTR-4,VTR-5"; // Padrão: todas operacionais
+                int hora = 20;
+                String ativasParam = "VTR-1,VTR-2,VTR-3,VTR-4,VTR-5";
 
                 if (query != null) {
                     for (String param : query.split("&")) {
@@ -45,13 +44,11 @@ public class Principal {
                     }
                 }
 
-                // Cria a lista de viaturas operacionais
                 List<String> viaturasAtivas = new ArrayList<>();
                 if (!ativasParam.trim().isEmpty()) {
                     viaturasAtivas = Arrays.asList(ativasParam.split(","));
                 }
 
-                // Obtém os dados do MapaController
                 Map<String, Object> dados = controller.getDadosMapa(hora, viaturasAtivas);
                 String jsonResposta = serializarParaJSON(dados);
 
@@ -73,7 +70,7 @@ public class Principal {
 
         StringBuilder sb = new StringBuilder("{");
 
-        // 1. Serializa a lista de Hexágonos com Nível de Perigo
+        // 1. Serializa a lista de Hexágonos
         sb.append("\"hexagonos\":[");
         List<Map<String, Object>> hexs = (List<Map<String, Object>>) mapa.get("hexagonos");
         if (hexs != null && !hexs.isEmpty()) {
@@ -81,7 +78,8 @@ public class Principal {
                 Map<String, Object> h = hexs.get(i);
                 sb.append("{")
                   .append("\"h3Index\":\"").append(h.get("h3Index")).append("\",")
-                  .append("\"nivelPerigo\":").append(h.get("nivelPerigo"))
+                  .append("\"nivelPerigo\":").append(h.get("nivelPerigo")).append(",")
+                  .append("\"pesoHorario\":").append(h.get("pesoHorario") != null ? h.get("pesoHorario") : 0)
                   .append("}");
                 if (i < hexs.size() - 1) sb.append(",");
             }
