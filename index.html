@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-     <!-- CSS e Bibliotecas (MapLibre, deck.gl, Uber H3 e Turf.js) -->
+    <!-- CSS e Bibliotecas (MapLibre, deck.gl, Uber H3 e Turf.js) -->
     <link href="https://unpkg.com/maplibre-gl@3.6.0/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://unpkg.com/maplibre-gl@3.6.0/dist/maplibre-gl.js"></script>
     <script src="https://unpkg.com/deck.gl@8.9.33/dist.min.js"></script>
@@ -55,21 +55,39 @@
       </div>
   </header>
 
-  <!-- Conteúdo Principal (Grid Ajustado e Expandido) -->
+  <!-- Conteúdo Principal -->
   <main class="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8 flex-1 h-full w-full">
       
       <!-- COLUNA ESQUERDA: Mapa Expandido na Horizontal -->
       <section class="w-full lg:w-[68%] flex flex-col gap-4 h-full">
+
+          <!-- BARRINHA DO CARTÃO PROGRAMA -->
+          <div id="barra-cartao-programa" class="hidden w-full mb-2 glass glow-cyan rounded-xl p-2.5 flex flex-col gap-1.5 transition-all">
+              <div class="flex items-center justify-between px-1">
+                  <div class="flex items-center gap-2">
+                      <i class="fa-solid fa-list-check text-cyan-400 text-xs"></i>
+                      <span class="text-xs font-mono text-slate-200 font-bold uppercase tracking-wider">
+                          Cartão Programa - <span id="vtr-cartao-titulo" class="text-cyan-300">VTR-1</span>
+                      </span>
+                  </div>
+                  <button onclick="fecharBarraCartao()" class="text-slate-400 hover:text-white text-xs cursor-pointer px-1">
+                      <i class="fa-solid fa-xmark"></i>
+                  </button>
+              </div>
+
+              <!-- Grid de 24 blocos de horas -->
+              <div id="grid-24h-cartao" class="grid grid-cols-12 sm:grid-cols-24 gap-1 w-full">
+                  <!-- Gerado dinamicamente via JS -->
+              </div>
+          </div>
           
           <!-- Container do Mapa -->
           <div class="map-wrapper w-full flex-1 min-h-[300px] sm:min-h-[400px] lg:min-h-0 flex flex-col">
-              <!-- Cantoneiras tecnológicas -->
               <div class="b-tl bracket"></div>
               <div class="b-tr bracket"></div>
               <div class="b-bl bracket"></div>
               <div class="b-br bracket"></div>
               
-              <!-- Área Visual do Mapa -->
               <div class="w-full h-full bg-[#f6f4eb] rounded shadow-inner overflow-hidden relative border border-slate-700/50">
                   <div id="map" class="w-full h-full"></div>
               </div>
@@ -83,7 +101,7 @@
           
       </section>
 
-      <!-- COLUNA DIREITA: Horário e Ações das Viaturas Alinhados à Direita -->
+      <!-- COLUNA DIREITA: Horário e Ações das Viaturas -->
       <section class="w-full lg:w-[32%] flex flex-col gap-2.5 sm:gap-3 lg:gap-4 pb-8 lg:pb-0 relative">
           
           <!-- SELETOR COMPACTO DE HORÁRIO -->
@@ -152,7 +170,7 @@
                   </div>
                   <span class="text-slate-300 text-[10px] sm:text-xs lg:text-sm font-medium group-hover:text-white transition-colors text-left leading-tight mt-1">Colocar em atendimento</span>
               </button>
-              <button class="glass glow-orange rounded-xl p-2.5 sm:p-3 lg:p-4 flex items-center justify-start gap-2 sm:gap-3 lg:gap-4 cursor-pointer group relative overflow-hidden">
+              <button onclick="carregarCartaoPrograma('VTR-1')" class="glass glow-orange rounded-xl p-2.5 sm:p-3 lg:p-4 flex items-center justify-start gap-2 sm:gap-3 lg:gap-4 cursor-pointer group relative overflow-hidden">
                   <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
                   <i class="fa-solid fa-print text-orange-400 text-base sm:text-xl lg:text-2xl group-hover:scale-110 transition-transform duration-300 ml-0 sm:ml-1"></i>
                   <span class="text-slate-100 font-medium text-[10px] sm:text-xs lg:text-sm text-left leading-tight group-hover:text-white">Gerar Cartão<br>Programa</span>
@@ -176,7 +194,7 @@
                   </div>
                   <span class="text-slate-300 text-[10px] sm:text-xs lg:text-sm font-medium group-hover:text-white transition-colors text-left leading-tight mt-1">Colocar em atendimento</span>
               </button>
-              <button class="glass glow-orange rounded-xl p-2.5 sm:p-3 lg:p-4 flex items-center justify-start gap-2 sm:gap-3 lg:gap-4 cursor-pointer group relative overflow-hidden">
+              <button onclick="carregarCartaoPrograma('VTR-2')" class="glass glow-orange rounded-xl p-2.5 sm:p-3 lg:p-4 flex items-center justify-start gap-2 sm:gap-3 lg:gap-4 cursor-pointer group relative overflow-hidden">
                   <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
                   <i class="fa-solid fa-print text-orange-400 text-base sm:text-xl lg:text-2xl group-hover:scale-110 transition-transform duration-300 ml-0 sm:ml-1"></i>
                   <span class="text-slate-100 font-medium text-[10px] sm:text-xs lg:text-sm text-left leading-tight group-hover:text-white">Gerar Cartão<br>Programa</span>
@@ -200,7 +218,7 @@
                   </div>
                   <span class="text-slate-300 text-[10px] sm:text-xs lg:text-sm font-medium group-hover:text-white transition-colors text-left leading-tight mt-1">Colocar em atendimento</span>
               </button>
-              <button class="glass glow-orange rounded-xl p-2.5 sm:p-3 lg:p-4 flex items-center justify-start gap-2 sm:gap-3 lg:gap-4 cursor-pointer group relative overflow-hidden">
+              <button onclick="carregarCartaoPrograma('VTR-3')" class="glass glow-orange rounded-xl p-2.5 sm:p-3 lg:p-4 flex items-center justify-start gap-2 sm:gap-3 lg:gap-4 cursor-pointer group relative overflow-hidden">
                   <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
                   <i class="fa-solid fa-print text-orange-400 text-base sm:text-xl lg:text-2xl group-hover:scale-110 transition-transform duration-300 ml-0 sm:ml-1"></i>
                   <span class="text-slate-100 font-medium text-[10px] sm:text-xs lg:text-sm text-left leading-tight group-hover:text-white">Gerar Cartão<br>Programa</span>
@@ -224,7 +242,7 @@
                   </div>
                   <span class="text-slate-300 text-[10px] sm:text-xs lg:text-sm font-medium group-hover:text-white transition-colors text-left leading-tight mt-1">Colocar em atendimento</span>
               </button>
-              <button class="glass glow-orange rounded-xl p-2.5 sm:p-3 lg:p-4 flex items-center justify-start gap-2 sm:gap-3 lg:gap-4 cursor-pointer group relative overflow-hidden">
+              <button onclick="carregarCartaoPrograma('VTR-4')" class="glass glow-orange rounded-xl p-2.5 sm:p-3 lg:p-4 flex items-center justify-start gap-2 sm:gap-3 lg:gap-4 cursor-pointer group relative overflow-hidden">
                   <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
                   <i class="fa-solid fa-print text-orange-400 text-base sm:text-xl lg:text-2xl group-hover:scale-110 transition-transform duration-300 ml-0 sm:ml-1"></i>
                   <span class="text-slate-100 font-medium text-[10px] sm:text-xs lg:text-sm text-left leading-tight group-hover:text-white">Gerar Cartão<br>Programa</span>
@@ -248,7 +266,7 @@
                   </div>
                   <span class="text-slate-300 text-[10px] sm:text-xs lg:text-sm font-medium group-hover:text-white transition-colors text-left leading-tight mt-1">Colocar em atendimento</span>
               </button>
-              <button class="glass glow-orange rounded-xl p-2.5 sm:p-3 lg:p-4 flex items-center justify-start gap-2 sm:gap-3 lg:gap-4 cursor-pointer group relative overflow-hidden">
+              <button onclick="carregarCartaoPrograma('VTR-5')" class="glass glow-orange rounded-xl p-2.5 sm:p-3 lg:p-4 flex items-center justify-start gap-2 sm:gap-3 lg:gap-4 cursor-pointer group relative overflow-hidden">
                   <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
                   <i class="fa-solid fa-print text-orange-400 text-base sm:text-xl lg:text-2xl group-hover:scale-110 transition-transform duration-300 ml-0 sm:ml-1"></i>
                   <span class="text-slate-100 font-medium text-[10px] sm:text-xs lg:text-sm text-left leading-tight group-hover:text-white">Gerar Cartão<br>Programa</span>
@@ -258,7 +276,6 @@
       </section>
   </main>
 
-  <!-- Script principal carregado no final do corpo -->
   <script src="resources/js/mapa.js"></script>
 </body>
 </html>

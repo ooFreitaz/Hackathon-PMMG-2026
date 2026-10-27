@@ -83,4 +83,48 @@ public class MapaController {
     public Map<String, Object> getDadosMapa(int hora) {
         return getDadosMapa(hora, Arrays.asList("VTR-1", "VTR-2", "VTR-3", "VTR-4", "VTR-5"));
     }
+
+    /**
+ * Gera o Cartão Programa de 24 horas para uma viatura específica,
+ * considerando a hora atual e as viaturas ativas no sistema.
+ */
+public CartaoPrograma gerarCartaoProgramaViatura(String idViatura, int hora) {
+    CartaoPrograma cp = new CartaoPrograma(idViatura);
+
+    try {
+        // 1. Lê as ocorrências
+        List<Ocorrencia> ocorrencias = leitorDados.lerTodasOcorrencias("ocorrencias.txt");
+
+        // 2. Mapeia as ocorrências nos hexágonos H3
+        Map<String, Hexagono> mapaHexagonos = new HashMap<>();
+        for (Ocorrencia oc : ocorrencias) {
+            String h3Index = h3.geoToH3Address(oc.getLatitude(), oc.getLongitude(), 9);
+            mapaHexagonos.putIfAbsent(h3Index, new Hexagono(h3Index));
+            mapaHexagonos.get(h3Index).adicionarOcorrencia(oc);
+        }
+
+        List<Hexagono> listaHexagonos = new ArrayList<>(mapaHexagonos.values());
+
+        // 3. Classifica as 24 horas do dia nas 3 Classes (8 faixas cada)
+        Map<Integer, Integer> mapaClasses = CartaoPrograma.calcularClasses24Horas(listaHexagonos);
+
+        // 4. Gera a distribuição de blocos para todas as 24 horas do dia
+        List<Bloco> blocosDoDia = new ArrayList<>();
+        for (int h = 0; h < 24; h++) {
+            perigoService.calcularPerigoDoMapaPorHora(listaHexagonos, h);
+            // Calcula com base em 5 VTRs operacionais padrão
+            List<Bloco> blocosHora = agrupadorService.criarBlocosEquilibrados(listaHexagonos, 5, h);
+            blocosDoDia.addAll(blocosHora);
+        }
+
+        // 5. Preenche o Cartão Programa com as 24h
+        cp.gerarCartaoCompleto(mapaClasses, blocosDoDia);
+
+    } catch (Exception e) {
+        System.err.println("Erro ao gerar Cartão Programa para " + idViatura + ": " + e.getMessage());
+        e.printStackTrace();
+    }
+
+    return cp;
+}
 }

@@ -5,7 +5,7 @@ public class Ocorrencia {
     private String id;
     private double latitude;
     private double longitude;
-    private char natureza; // Ex: "A", "B", "C"
+    private char natureza; 
     private LocalTime hora;
     private int pesoDoCrime;
 

@@ -1,10 +1,13 @@
 /**
  * INTEGRAÇÃO FRONT-END / BACK-END DA 39ª CIA
- * Mapeamento dinâmico, hexágonos recortados, exibição de peso, posicionamento de VTRs e seleção de horas.
+ * Mapeamento dinâmico, hexágonos recortados, exibição de peso, posicionamento de VTRs e Cartão Programa.
  */
+
+// 1. VARIÁVEIS GLOBAIS
 let deckgl = null;
 let geojsonData = null;
 let horaAtual = 20;
+let vtrCartaoAberta = null;
 
 const estadoViaturas = {
   "VTR-1": true,
@@ -16,6 +19,7 @@ const estadoViaturas = {
 
 const API_URL = 'http://localhost:8080/api/dados-mapa';
 
+// 2. INICIALIZAÇÃO DO MAPA
 window.onload = async () => {
   deckgl = new deck.DeckGL({
     container: 'map',
@@ -35,30 +39,30 @@ window.onload = async () => {
     const res = await fetch('resources/js/39_cia.geojson');
     geojsonData = await res.json();
 
-    // Carrega os dados iniciais das 20h
     await carregarDadosEColorir(horaAtual);
   } catch (err) {
     console.error("Erro ao carregar mapa base:", err);
   }
 };
 
-// Troca a hora e atualiza as cores da malha no mapa
+// 3. SELEÇÃO DE HORÁRIO
 async function selecionarHora(hora) {
   horaAtual = hora;
 
-  // Atualiza label visual no painel
   const display = document.getElementById('display-hora-selecionada');
   if (display) display.innerText = `${String(hora).padStart(2, '0')}:00 h`;
 
-  // Oculta o modal de seleção de hora
   const modal = document.getElementById('modal-horas');
   if (modal) modal.classList.add('hidden');
 
-  // Requisita a nova análise ao servidor Java
   await carregarDadosEColorir(hora);
+
+  if (vtrCartaoAberta) {
+    carregarCartaoPrograma(vtrCartaoAberta);
+  }
 }
 
-// Envia a hora e a lista de VTRs operacionais ao Java
+// 4. CARREGAMENTO DOS DADOS DO MAPA
 async function carregarDadosEColorir(hora) {
   try {
     const viaturasAtivas = Object.keys(estadoViaturas)
@@ -74,7 +78,7 @@ async function carregarDadosEColorir(hora) {
   }
 }
 
-// Alterna status da VTR e recalcula posições das demais no Java
+// 5. ALTERNAR STATUS DA VIATURA
 function toggleAtendimentoViatura(idViatura, buttonElement) {
   estadoViaturas[idViatura] = !estadoViaturas[idViatura];
   const estaAtiva = estadoViaturas[idViatura];
@@ -103,21 +107,24 @@ function toggleAtendimentoViatura(idViatura, buttonElement) {
   }
 
   carregarDadosEColorir(horaAtual);
+
+  if (vtrCartaoAberta) {
+    carregarCartaoPrograma(vtrCartaoAberta);
+  }
 }
 
+// 6. RENDERIZAR CAMADAS NO DECK.GL
 function desenharMalhaEViaturas(dadosJava) {
   if (!geojsonData) return;
 
-  // Paleta de Cores em RGBA [R, G, B, Opacidade]
   const paletaCores = {
-    5: [47, 0, 48, 210],     // Nível 5: Roxo Escuro (#2F0030) - Crítico
-    4: [207, 2, 0, 180],     // Nível 4: Vermelho (#CF0200) - Alto
-    3: [242, 67, 0, 160],    // Nível 3: Laranja Vivo (#F24300) - Médio
-    2: [227, 133, 0, 140],   // Nível 2: Laranja Fechado (#E38500) - Baixo
-    1: [238, 209, 0, 120]    // Nível 1: Amarelo (#EED100) - Muito Baixo
+    5: [47, 0, 48, 210],
+    4: [207, 2, 0, 180],
+    3: [242, 67, 0, 160],
+    2: [227, 133, 0, 140],
+    1: [238, 209, 0, 120]
   };
 
-  // Mapeia perigo e peso calculados pelo Java por h3Index
   const mapaPerigo = {};
   const mapaPeso = {};
   if (dadosJava && dadosJava.hexagonos) {
@@ -127,7 +134,6 @@ function desenharMalhaEViaturas(dadosJava) {
     });
   }
 
-  // Recorte Geométrico do Contorno usando Turf.js
   let mapBoundary = geojsonData.features[0];
   if (geojsonData.features.length > 1) {
     mapBoundary = turf.combine(geojsonData).features[0];
@@ -168,7 +174,6 @@ function desenharMalhaEViaturas(dadosJava) {
         };
         clippedHexagons.push(intersection);
 
-        // Adiciona ao texto para exibir no centro
         const centro = turf.centroid(intersection);
         dadosTextoHex.push({
           coordinates: centro.geometry.coordinates,
@@ -181,7 +186,7 @@ function desenharMalhaEViaturas(dadosJava) {
 
   const clippedGeoJSON = turf.featureCollection(clippedHexagons);
 
-  // 1. CAMADA DOS HEXÁGONOS RECORTADOS (Cores de Risco)
+  // Camada 1: Hexágonos
   const camadaHexagonos = new deck.GeoJsonLayer({
     id: `camada-malha-h3-${horaAtual}-${Date.now()}`,
     data: clippedGeoJSON,
@@ -196,7 +201,7 @@ function desenharMalhaEViaturas(dadosJava) {
     }
   });
 
-  // 2. CAMADA DOS NÚMEROS (Peso Real das Ocorrências)
+  // Camada 2: Números do Peso
   const camadaTextos = new deck.TextLayer({
     id: `camada-texto-pontuacao-${horaAtual}-${Date.now()}`,
     data: dadosTextoHex,
@@ -214,7 +219,7 @@ function desenharMalhaEViaturas(dadosJava) {
     }
   });
 
-  // 3. CAMADA DO CONTORNO AZUL DA 39ª CIA
+  // Camada 3: Contorno Azul
   const camadaContorno = new deck.GeoJsonLayer({
     id: 'camada-contorno',
     data: geojsonData,
@@ -225,7 +230,7 @@ function desenharMalhaEViaturas(dadosJava) {
     lineWidthUnits: 'pixels'
   });
 
-  // 4. CAMADA DAS VIATURAS
+  // Camada 4: Viaturas
   let camadaViaturas = null;
   if (dadosJava && dadosJava.viaturas && dadosJava.viaturas.length > 0) {
     const vtrData = dadosJava.viaturas
@@ -252,11 +257,64 @@ function desenharMalhaEViaturas(dadosJava) {
     });
   }
 
-  // Monta as camadas ativas
   const layers = [camadaHexagonos, camadaTextos, camadaContorno];
   if (camadaViaturas) layers.push(camadaViaturas);
 
   deckgl.setProps({ layers });
+}
+
+// 7. CARTÃO PROGRAMA
+async function carregarCartaoPrograma(idViatura) {
+  try {
+    vtrCartaoAberta = idViatura;
+    const res = await fetch(`http://localhost:8080/api/cartao-programa?vtr=${idViatura}&hora=${horaAtual}`);
+    const dados = await res.json();
+
+    renderizarBarra24H(dados.idViatura, dados.comportamentos);
+  } catch (err) {
+    console.error("Erro ao carregar Cartão Programa:", err);
+  }
+}
+
+function renderizarBarra24H(idViatura, comportamentos) {
+  const container = document.getElementById('barra-cartao-programa');
+  const titulo = document.getElementById('vtr-cartao-titulo');
+  const grid = document.getElementById('grid-24h-cartao');
+
+  if (!container || !grid) return;
+
+  titulo.innerText = idViatura;
+  grid.innerHTML = '';
+
+  const coresComportamento = {
+    1: 'bg-red-600 text-white border-red-400 shadow-[0_0_8px_rgba(220,38,38,0.5)]',
+    2: 'bg-orange-500 text-slate-950 border-orange-300 shadow-[0_0_8px_rgba(249,115,22,0.5)]',
+    3: 'bg-yellow-400 text-slate-950 border-yellow-200 shadow-[0_0_8px_rgba(250,204,21,0.5)]'
+  };
+
+  comportamentos.forEach((comp, hora) => {
+    const horaFormatada = String(hora).padStart(2, '0');
+    const classeCor = coresComportamento[comp] || 'bg-slate-700 text-slate-300';
+    const bordaDestaque = (hora === horaAtual) ? 'ring-2 ring-white scale-105 z-10' : '';
+
+    const divBloco = document.createElement('div');
+    divBloco.className = `flex flex-col items-center justify-center p-1 rounded border text-center transition-all ${classeCor} ${bordaDestaque}`;
+    divBloco.title = `Hora: ${horaFormatada}:00h - Comportamento: ${comp}`;
+    divBloco.innerHTML = `
+      <span class="text-[9px] font-mono opacity-80 leading-none">${horaFormatada}h</span>
+      <span class="text-xs font-bold font-mono leading-tight mt-0.5">${comp}</span>
+    `;
+
+    grid.appendChild(divBloco);
+  });
+
+  container.classList.remove('hidden');
+}
+
+function fecharBarraCartao() {
+  vtrCartaoAberta = null;
+  const container = document.getElementById('barra-cartao-programa');
+  if (container) container.classList.add('hidden');
 }
 
 function toggleMenuHoras() {

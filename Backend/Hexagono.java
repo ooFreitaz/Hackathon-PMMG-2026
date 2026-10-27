@@ -44,27 +44,7 @@ public class Hexagono {
         }
     }
 
-    public void atualizarNivelPerigoPorHora(double mediaMapa, int hora) {
-        int pesoHexagono = this.OcorrenciasHorario[hora];
-
-        // Se a média for 0 (nenhum crime no mapa nessa hora), todos ficam em nível 1 ou 3
-        if (mediaMapa == 0) {
-            this.nivelPerigo = (pesoHexagono == 0) ? 1 : 3;
-            return;
-        }
-
-        if (pesoHexagono >= mediaMapa * 1.75) {
-            this.nivelPerigo = 5; // >= 50% acima da média
-        } else if (pesoHexagono >= mediaMapa * 1.50) {
-            this.nivelPerigo = 4; // >= 25% acima da média
-        } else if (pesoHexagono <= mediaMapa * 0.50) {
-            this.nivelPerigo = 1; // <= 50% abaixo da média
-        } else if (pesoHexagono <= mediaMapa * 0.25) {
-            this.nivelPerigo = 2; // <= 25% abaixo da média
-        } else {
-            this.nivelPerigo = 3; // Na faixa entre -25% e +25% da média
-        }
-    }
+    
 
     // Getters e Setters
     public String getH3Index() { return h3Index; }

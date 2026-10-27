@@ -17,6 +17,7 @@ public class Principal {
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
         MapaController controller = new MapaController();
 
+        // 1. ENDPOINT DADOS DO MAPA
         server.createContext("/api/dados-mapa", new HttpHandler() {
             @Override
             public void handle(HttpExchange exchange) throws IOException {
@@ -60,6 +61,46 @@ public class Principal {
             }
         });
 
+        // 2. ENDPOINT CARTÃO PROGRAMA
+        server.createContext("/api/cartao-programa", new HttpHandler() {
+            @Override
+            public void handle(HttpExchange exchange) throws IOException {
+                exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+                exchange.getResponseHeaders().add("Content-Type", "application/json; charset=UTF-8");
+
+                String query = exchange.getRequestURI().getQuery();
+                String vtr = "VTR-1";
+                int hora = 20;
+
+                if (query != null) {
+                    for (String param : query.split("&")) {
+                        if (param.startsWith("vtr=")) vtr = param.split("=")[1];
+                        else if (param.startsWith("hora=")) {
+                            try { hora = Integer.parseInt(param.split("=")[1]); } catch (Exception ignored) {}
+                        }
+                    }
+                }
+
+                CartaoPrograma cp = controller.gerarCartaoProgramaViatura(vtr, hora);
+
+                StringBuilder sb = new StringBuilder("{");
+                sb.append("\"idViatura\":\"").append(vtr).append("\",");
+                sb.append("\"comportamentos\":[");
+                int[] comps = cp.getComportamentoPorHora();
+                for (int i = 0; i < 24; i++) {
+                    sb.append(comps[i]);
+                    if (i < 23) sb.append(",");
+                }
+                sb.append("]}");
+
+                byte[] bytes = sb.toString().getBytes(StandardCharsets.UTF_8);
+                exchange.sendResponseHeaders(200, bytes.length);
+                OutputStream os = exchange.getResponseBody();
+                os.write(bytes);
+                os.close();
+            }
+        });
+
         server.start();
         System.out.println("=== SERVIDOR PMMG OPERACIONAL NA PORTA 8080 ===");
     }
@@ -70,7 +111,6 @@ public class Principal {
 
         StringBuilder sb = new StringBuilder("{");
 
-        // 1. Serializa a lista de Hexágonos
         sb.append("\"hexagonos\":[");
         List<Map<String, Object>> hexs = (List<Map<String, Object>>) mapa.get("hexagonos");
         if (hexs != null && !hexs.isEmpty()) {
@@ -86,7 +126,6 @@ public class Principal {
         }
         sb.append("],");
 
-        // 2. Serializa as Viaturas
         sb.append("\"viaturas\":[");
         List<Map<String, Object>> vtrs = (List<Map<String, Object>>) mapa.get("viaturas");
         if (vtrs != null && !vtrs.isEmpty()) {
