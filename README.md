@@ -11,4 +11,4 @@ Integrantes:
 Passo a passo para fazer o teste do programa:
 1. Baixar a extensão Live Server, para conseguir hospedar na maquina
 2. Compile o arquivo Principal.java
-3. Clique 
+3. Clique com o botão direito no "index.html" e clique em "Open with Live Server"
