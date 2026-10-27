@@ -7,3 +7,8 @@ Integrantes:
 - Enzo Nardy
 - Samuel Oliveira 
 - João Vitor Damasceno 
+
+Passo a passo para fazer o teste do programa:
+1. Baixar a extensão Live Server, para conseguir hospedar na maquina
+2. Compile o arquivo Principal.java
+3. Clique 
